@@ -4,7 +4,7 @@
     "SheetButton": "Dodaj przedmiot z efektami",
     "DirectoryAction": "Dodaj przedmiot z efektami",
     "Settings": { "MenuName": "Przedmiot z efektami", "MenuLabel": "Otwórz kreator", "MenuHint": "Jako MG utwórz przedmiot z aktywnymi efektami i dodaj go do postaci." },
-    "Errors": { "GmOnly": "Tylko MG może tworzyć przedmioty z efektami.", "NoActor": "Wybierz kartę postaci, do której ma zostać dodany przedmiot.", "UnsupportedCore": "GM Effect Items wspiera Foundry VTT 13 i 14.", "UnsupportedSystem": "GM Effect Items wymaga D&D5e 5.2.5 lub nowszego.", "Dnd6NeedsV14": "D&D5e 6.x wymaga Foundry VTT 14; na Foundry 13 użyj D&D5e 5.x." },
+    "Errors": { "GmOnly": "Tylko MG może tworzyć przedmioty z efektami.", "NoActor": "Wybierz kartę postaci, do której ma zostać dodany przedmiot.", "UnsupportedCore": "New Tavern wspiera Foundry VTT 13 i 14.", "UnsupportedSystem": "New Tavern wymaga D&D5e 5.2.5 lub nowszego.", "Dnd6NeedsV14": "D&D5e 6.x wymaga Foundry VTT 14; na Foundry 13 użyj D&D5e 5.x." },
     "Notifications": { "Added": "Dodano „{item}” do karty: {actor}." }
   }
 }
