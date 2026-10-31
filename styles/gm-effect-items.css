@@ -1,0 +1,7 @@
+.gm-effect-items-form .form-group.stacked { display: block; }
+.gm-effect-items-form .form-group.stacked label { display: block; margin-bottom: 4px; }
+.gm-effect-items-form .effect-editor { position: relative; margin: 8px 0; padding: 10px; border: 1px solid var(--color-border-light-primary); }
+.gm-effect-items-form .effect-editor > .icon-button { position: absolute; right: 8px; top: 2px; }
+.gm-effect-items-form .effect-change { display: grid; grid-template-columns: 2.2fr 1.1fr 1fr 55px 26px; gap: 4px; margin: 5px 0; }
+.gm-effect-items-form .icon-button { flex: 0 0 26px; padding: 2px; line-height: 24px; }
+.gm-effect-items-form .sheet-footer { margin-top: 12px; }
