@@ -1,22 +1,22 @@
 {
-  "id": "gm-effect-items",
-  "title": "GM Effect Items",
-  "description": "Tworzenie przedmiotów z aktywnymi efektami i dodawanie ich do kart postaci przez MG.",
-  "version": "0.2.0",
+  "id": "new-tavern",
+  "title": "New Tavern",
+  "description": "Moduł New Tavern. Pierwsza funkcja: tworzenie przez MG przedmiotów z aktywnymi efektami i dodawanie ich do kart postaci.",
+  "version": "0.3.0",
   "compatibility": {
     "minimum": "13",
     "verified": "14.365"
   },
   "authors": [
     {
-      "name": "GM Effect Items"
+      "name": "New Tavern"
     }
   ],
   "esmodules": [
-    "scripts/gm-effect-items.js"
+    "scripts/new-tavern.js"
   ],
   "styles": [
-    "styles/gm-effect-items.css"
+    "styles/new-tavern.css"
   ],
   "languages": [
     {
