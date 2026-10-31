@@ -1,0 +1,40 @@
+{
+  "id": "gm-effect-items",
+  "title": "GM Effect Items",
+  "description": "Tworzenie przedmiotów z aktywnymi efektami i dodawanie ich do kart postaci przez MG.",
+  "version": "0.2.0",
+  "compatibility": {
+    "minimum": "13",
+    "verified": "14.365"
+  },
+  "authors": [
+    {
+      "name": "GM Effect Items"
+    }
+  ],
+  "esmodules": [
+    "scripts/gm-effect-items.js"
+  ],
+  "styles": [
+    "styles/gm-effect-items.css"
+  ],
+  "languages": [
+    {
+      "lang": "pl",
+      "name": "Polski",
+      "path": "lang/pl.json"
+    }
+  ],
+  "relationships": {
+    "systems": [
+      {
+        "id": "dnd5e",
+        "type": "system",
+        "compatibility": {
+          "minimum": "5.2.5",
+          "verified": "6.0.6"
+        }
+      }
+    ]
+  }
+}
