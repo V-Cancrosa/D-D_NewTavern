@@ -32,5 +32,5 @@ Następnie uruchom świat i aktywuj New Tavern w **Manage Modules**.
 ## Wydawanie nowej wersji
 
 1. Podnieś `version` w `module.json` i scal zmiany do `main`.
-2. Na GitHubie utwórz wydanie (**Releases → Draft a new release**) z tagiem `vX.Y.Z`, np. `v0.3.0`.
+2. Na GitHubie utwórz wydanie (**Releases → Draft a new release**) z tagiem `vX.Y.Z`, np. `v0.3.0`, albo uruchom workflow **Release** ręcznie (**Actions → Release → Run workflow**) z tym tagiem.
 3. Workflow `.github/workflows/release.yml` dołączy do wydania `module.json` i `new-tavern.zip`; od tej chwili Manifest URL wskazuje nową wersję.
