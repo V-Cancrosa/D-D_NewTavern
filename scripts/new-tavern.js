@@ -3,28 +3,36 @@ import NewTavernWizard from "./wizard.js";
 const MODULE_ID = "new-tavern";
 const ICON = "fa-solid fa-wand-magic-sparkles";
 
+/** Pokazuje błąd otwarcia kreatora z treścią wyjątku (bez zależności od plików językowych). */
+function reportOpenError(err) {
+  console.error(`${MODULE_ID} | Nie udało się otworzyć kreatora`, err);
+  ui.notifications.error(`New Tavern: nie udało się otworzyć kreatora: ${err?.message ?? err}`, { permanent: true });
+}
+
 const EDITABLE_TYPES = new Set(["weapon", "equipment", "consumable", "tool", "loot", "feat"]);
 
 /** Otwiera kreator (tylko MG). */
 export function openWizard(actor = null) {
-  if ( !game.user.isGM ) return ui.notifications.warn(game.i18n.localize("GMEI.Errors.GmOnly"));
+  if ( !game.user.isGM ) return ui.notifications.warn("Tylko MG może tworzyć i edytować przedmioty w New Tavern.");
   try {
-    return new NewTavernWizard({ actor }).render(true);
+    const app = new NewTavernWizard({ actor });
+    app.render({ force: true })?.catch?.(reportOpenError);
+    return app;
   } catch(err) {
-    console.error(`${MODULE_ID} |`, err);
-    ui.notifications.error(game.i18n.format("GMEI.Errors.OpenFailed", { error: err.message }));
+    reportOpenError(err);
   }
 }
 
 /** Otwiera edytor istniejącego przedmiotu (tylko MG). */
 export function openEditor(item) {
-  if ( !game.user.isGM ) return ui.notifications.warn(game.i18n.localize("GMEI.Errors.GmOnly"));
+  if ( !game.user.isGM ) return ui.notifications.warn("Tylko MG może tworzyć i edytować przedmioty w New Tavern.");
   if ( !item || !EDITABLE_TYPES.has(item.type) ) return item?.sheet.render(true);
   try {
-    return new NewTavernWizard({ item }).render(true);
+    const app = new NewTavernWizard({ item });
+    app.render({ force: true })?.catch?.(reportOpenError);
+    return app;
   } catch(err) {
-    console.error(`${MODULE_ID} |`, err);
-    ui.notifications.error(game.i18n.format("GMEI.Errors.OpenFailed", { error: err.message }));
+    reportOpenError(err);
   }
 }
 
@@ -32,12 +40,14 @@ const canEdit = item => game.user.isGM && item && EDITABLE_TYPES.has(item.type) 
 
 Hooks.once("init", () => {
   game.settings.registerMenu(MODULE_ID, "createEffectItem", {
-    name: "GMEI.Settings.MenuName", label: "GMEI.Settings.MenuLabel",
-    hint: "GMEI.Settings.MenuHint", icon: ICON,
+    name: "Kreator przedmiotów", label: "Otwórz kreator",
+    hint: "Jako MG utwórz przedmiot z efektami, czasem trwania, aktywnością i ładunkami – bez znajomości kluczy dnd5e.",
+    icon: ICON,
     type: NewTavernWizard, restricted: true
   });
   game.settings.register(MODULE_ID, "replaceEdit", {
-    name: "GMEI.Settings.ReplaceEditName", hint: "GMEI.Settings.ReplaceEditHint",
+    name: "„Edit” otwiera edytor New Tavern",
+    hint: "Dla MG: pozycja „Edit” w menu przedmiotu na karcie postaci otwiera edytor New Tavern. Oryginalna karta przedmiotu jest pod pozycją „Karta systemu”.",
     scope: "world", config: true, type: Boolean, default: true
   });
 });
@@ -47,10 +57,10 @@ Hooks.once("ready", () => {
   if ( mod ) mod.api = { open: openWizard, edit: openEditor, NewTavernWizard };
   if ( !game.user.isGM ) return;
   const gen = game.release?.generation ?? 0;
-  if ( gen < 13 ) ui.notifications.warn(game.i18n.localize("GMEI.Errors.UnsupportedCore"));
-  if ( game.system.id !== "dnd5e" ) ui.notifications.warn(game.i18n.localize("GMEI.Errors.UnsupportedSystem"));
+  if ( gen < 13 ) ui.notifications.warn("New Tavern wspiera Foundry VTT 13 i 14.");
+  if ( game.system.id !== "dnd5e" ) ui.notifications.warn("New Tavern wymaga systemu D&D5e.");
   else if ( foundry.utils.isNewerVersion(game.system.version, "5.99.99") && (gen < 14) ) {
-    ui.notifications.warn(game.i18n.localize("GMEI.Errors.Dnd6NeedsV14"));
+    ui.notifications.warn("D&D5e 6.x wymaga Foundry VTT 14; na Foundry 13 użyj D&D5e 5.x.");
   }
 });
 
@@ -70,8 +80,8 @@ function addSheetButton(app, html) {
   button.type = "button";
   button.className = `header-control icon ${ICON}`;
   button.dataset.newTavern = "true";
-  button.dataset.tooltip = game.i18n.localize("GMEI.SheetButton");
-  button.setAttribute("aria-label", game.i18n.localize("GMEI.SheetButton"));
+  button.dataset.tooltip = "New Tavern: nowy przedmiot dla tej postaci";
+  button.setAttribute("aria-label", "New Tavern: nowy przedmiot dla tej postaci");
   button.addEventListener("click", event => {
     event.preventDefault();
     event.stopPropagation();
@@ -107,7 +117,7 @@ function addActorContext(_app, options) {
     const id = el?.dataset?.entryId ?? el?.dataset?.documentId;
     return game.actors.get(id);
   };
-  const name = game.i18n.localize("GMEI.DirectoryAction");
+  const name = "New Tavern: nowy przedmiot";
   if ( options.some(o => (o.name ?? o.label) === name) ) return;
   const v14 = (game.release?.generation ?? 13) >= 14;
   options.push({
@@ -141,7 +151,7 @@ function menuEntry(label, icon, run, visible = () => true) {
 /** Menu „⋮” przedmiotu na karcie postaci (dnd5e). */
 Hooks.on("dnd5e.getItemContextOptions", (item, menuItems) => {
   if ( !canEdit(item) ) return;
-  const label = game.i18n.localize("GMEI.EditInWizard");
+  const label = "Edytuj w New Tavern";
   if ( !game.settings.get(MODULE_ID, "replaceEdit") ) {
     menuItems.push(menuEntry(label, ICON, () => openEditor(item)));
     return;
@@ -153,7 +163,7 @@ Hooks.on("dnd5e.getItemContextOptions", (item, menuItems) => {
   }
   // „Edit” otwiera kreator; oryginalna karta systemu zostaje pod osobną pozycją.
   const index = menuItems.indexOf(edit);
-  const native = menuEntry(game.i18n.localize("GMEI.EditNative"), "fa-solid fa-file-lines", () => item.sheet.render(true));
+  const native = menuEntry("Karta systemu", "fa-solid fa-file-lines", () => item.sheet.render(true));
   menuItems.splice(index + 1, 0, native);
   if ( "onClick" in edit ) edit.onClick = () => openEditor(item);
   if ( "callback" in edit ) edit.callback = () => openEditor(item);
@@ -163,7 +173,7 @@ Hooks.on("dnd5e.getItemContextOptions", (item, menuItems) => {
 /** Menu kontekstowe przedmiotu w katalogu przedmiotów. */
 function addItemDirectoryContext(_app, options) {
   if ( !game.user.isGM ) return;
-  const label = game.i18n.localize("GMEI.EditInWizard");
+  const label = "Edytuj w New Tavern";
   if ( options.some(o => (o.name ?? o.label) === label) ) return;
   const itemFrom = li => {
     const el = asElement(li);
@@ -184,8 +194,8 @@ Hooks.on("renderDocumentSheetV2", (app, html) => {
   button.type = "button";
   button.className = `header-control icon ${ICON}`;
   button.dataset.newTavern = "true";
-  button.dataset.tooltip = game.i18n.localize("GMEI.EditInWizard");
-  button.setAttribute("aria-label", game.i18n.localize("GMEI.EditInWizard"));
+  button.dataset.tooltip = "Edytuj w New Tavern";
+  button.setAttribute("aria-label", "Edytuj w New Tavern");
   button.addEventListener("click", event => {
     event.preventDefault();
     event.stopPropagation();

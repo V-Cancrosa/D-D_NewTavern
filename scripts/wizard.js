@@ -80,18 +80,15 @@ function defaultNum(t, op) {
 export default class NewTavernWizard extends HandlebarsApplicationMixin(ApplicationV2) {
   constructor(options = {}) {
     const item = options.item ?? null;
-    if ( item ) options = { ...options, id: `new-tavern-edit-${item.id}` };
+    const title = item ? `New Tavern · edycja: ${item.name}` : "New Tavern · kreator przedmiotu";
+    options = { ...options, window: { ...(options.window ?? {}), title } };
+    if ( item ) options.id = `new-tavern-edit-${item.id}`;
     super(options);
     this.item = item;
     if ( item ) {
-      this.state = readItem(item, defaultState(item.parent));
-      this.state.step = 2;
-    } else this.state = defaultState(options.actor);
-  }
-
-  /** @override */
-  get title() {
-    return this.item ? `New Tavern · edycja: ${this.item.name}` : "New Tavern · kreator przedmiotu";
+      this.nt = readItem(item, defaultState(item.parent));
+      this.nt.step = 2;
+    } else this.nt = defaultState(options.actor);
   }
 
   static DEFAULT_OPTIONS = {
@@ -132,19 +129,19 @@ export default class NewTavernWizard extends HandlebarsApplicationMixin(Applicat
   /* -------------------------------------------- */
 
   get effect() {
-    return this.state.effects[this.state.current] ?? null;
+    return this.nt.effects[this.nt.current] ?? null;
   }
 
   /** Doprowadza wiersze do poprawnego stanu po zmianach. */
   #sanitize() {
-    for ( const e of this.state.effects ) for ( const r of e.rows ) {
+    for ( const e of this.nt.effects ) for ( const r of e.rows ) {
       const t = getTarget(r.target);
       if ( !t ) continue;
       if ( !t.ops.includes(r.op) ) r.op = t.ops[0];
       const kinds = allowedKinds(t, r.op);
       if ( kinds.length && !kinds.includes(r.kind) ) r.kind = kinds[0];
     }
-    this.state.current = Math.clamp(this.state.current, 0, Math.max(this.state.effects.length - 1, 0));
+    this.nt.current = Math.clamp(this.nt.current, 0, Math.max(this.nt.effects.length - 1, 0));
   }
 
   /* -------------------------------------------- */
@@ -154,7 +151,7 @@ export default class NewTavernWizard extends HandlebarsApplicationMixin(Applicat
   /** @override */
   async _prepareContext() {
     this.#sanitize();
-    const s = this.state;
+    const s = this.nt;
     const D = CONFIG.DND5E;
     const v14 = isV14();
 
@@ -260,7 +257,7 @@ export default class NewTavernWizard extends HandlebarsApplicationMixin(Applicat
   }
 
   #describeUsage() {
-    const { usage: u, uses } = this.state;
+    const { usage: u, uses } = this.nt;
     const dice = d => `${d.count}k${d.die}${d.bonus ? ` + ${d.bonus}` : ""}`;
     const parts = [];
     if ( u.kind === "heal" ) parts.push(`Leczy ${dice(u.heal)} PW.`);
@@ -288,13 +285,13 @@ export default class NewTavernWizard extends HandlebarsApplicationMixin(Applicat
     if ( !path ) return;
     let value = el.type === "checkbox" ? el.checked : el.value;
     if ( el.dataset.dtype === "Number" ) value = Number(value) || 0;
-    foundry.utils.setProperty(this.state, path, value);
+    foundry.utils.setProperty(this.nt, path, value);
     if ( path.endsWith(".target") ) {
-      const row = foundry.utils.getProperty(this.state, path.replace(/\.target$/, ""));
+      const row = foundry.utils.getProperty(this.nt, path.replace(/\.target$/, ""));
       const t = getTarget(value);
       Object.assign(row, { op: t.ops[0], kind: "number", tags: [], num: defaultNum(t, t.ops[0]), count: 1 });
     }
-    if ( path === "item.type" ) this.state.item.subtype = "";
+    if ( path === "item.type" ) this.nt.item.subtype = "";
     // Pola tekstowe nie wymagają przerysowania – unikamy utraty fokusu przy przechodzeniu Tabem.
     if ( (el.tagName === "TEXTAREA") || (el.type === "text") ) {
       if ( path === "item.name" ) this.element.querySelector(".nt-name").textContent = value || "Nowy przedmiot";
@@ -312,17 +309,17 @@ export default class NewTavernWizard extends HandlebarsApplicationMixin(Applicat
   /* -------------------------------------------- */
 
   static #onStep(event, target) {
-    this.state.step = Number(target.dataset.step);
+    this.nt.step = Number(target.dataset.step);
     this.render();
   }
 
   static #onNext() {
-    this.state.step = Math.min(4, this.state.step + 1);
+    this.nt.step = Math.min(4, this.nt.step + 1);
     this.render();
   }
 
   static #onPrev() {
-    this.state.step = Math.max(1, this.state.step - 1);
+    this.nt.step = Math.max(1, this.nt.step - 1);
     this.render();
   }
 
@@ -330,7 +327,7 @@ export default class NewTavernWizard extends HandlebarsApplicationMixin(Applicat
     const p = PRESETS.find(x => x.id === target.dataset.preset);
     if ( !p ) return;
     const base = defaultState();
-    const s = this.state;
+    const s = this.nt;
     s.item = foundry.utils.mergeObject(base.item, foundry.utils.deepClone(p.item));
     s.effects = foundry.utils.deepClone(p.effects).map(e => ({ ...e, id: foundry.utils.randomID() }));
     if ( !s.effects.length ) s.effects = [];
@@ -341,44 +338,44 @@ export default class NewTavernWizard extends HandlebarsApplicationMixin(Applicat
   }
 
   static #onItemType(event, target) {
-    this.state.item.type = target.dataset.value;
-    this.state.item.subtype = "";
+    this.nt.item.type = target.dataset.value;
+    this.nt.item.subtype = "";
     this.render();
   }
 
   static #onPickImage() {
     const FP = foundry.applications.apps?.FilePicker?.implementation ?? globalThis.FilePicker;
-    new FP({ type: "image", current: this.state.item.img, callback: path => {
-      this.state.item.img = path;
+    new FP({ type: "image", current: this.nt.item.img, callback: path => {
+      this.nt.item.img = path;
       this.render();
     } }).render(true);
   }
 
   static #onSelectEffect(event, target) {
-    this.state.current = Number(target.dataset.index);
+    this.nt.current = Number(target.dataset.index);
     this.render();
   }
 
   static #onAddEffect() {
-    this.state.effects.push(newEffect(`Efekt ${this.state.effects.length + 1}`));
-    this.state.current = this.state.effects.length - 1;
+    this.nt.effects.push(newEffect(`Efekt ${this.nt.effects.length + 1}`));
+    this.nt.current = this.nt.effects.length - 1;
     this.render();
   }
 
   static #onRemoveEffect() {
-    this.state.effects.splice(this.state.current, 1);
+    this.nt.effects.splice(this.nt.current, 1);
     this.render();
   }
 
   static #onEffectMode(event, target) {
     if ( !this.effect ) return;
     this.effect.mode = target.dataset.value;
-    if ( this.effect.mode === "timed" && this.state.usage.kind === "none" ) this.state.usage.kind = "utility";
+    if ( this.effect.mode === "timed" && this.nt.usage.kind === "none" ) this.nt.usage.kind = "utility";
     this.render();
   }
 
   static #onAddRow() {
-    if ( !this.effect ) this.state.effects.push(newEffect());
+    if ( !this.effect ) this.nt.effects.push(newEffect());
     this.effect.rows.push(newRow("init"));
     this.render();
   }
@@ -430,7 +427,7 @@ export default class NewTavernWizard extends HandlebarsApplicationMixin(Applicat
   }
 
   static #onUsageKind(event, target) {
-    this.state.usage.kind = target.dataset.value;
+    this.nt.usage.kind = target.dataset.value;
     this.render();
   }
 
@@ -439,8 +436,8 @@ export default class NewTavernWizard extends HandlebarsApplicationMixin(Applicat
   }
 
   static async #onCreate() {
-    if ( !game.user.isGM ) return ui.notifications.warn(game.i18n.localize("GMEI.Errors.GmOnly"));
-    const s = this.state;
+    if ( !game.user.isGM ) return ui.notifications.warn("Tylko MG może tworzyć i edytować przedmioty w New Tavern.");
+    const s = this.nt;
     if ( !s.item.name?.trim() ) {
       s.step = 1;
       this.render();
@@ -449,11 +446,11 @@ export default class NewTavernWizard extends HandlebarsApplicationMixin(Applicat
     if ( this.item ) {
       try {
         await saveItem(this.item, s);
-        ui.notifications.info(game.i18n.format("GMEI.Notifications.Saved", { item: this.item.name }));
+        ui.notifications.info(`Zapisano zmiany w „${this.item.name}”.`);
         this.close();
       } catch(err) {
         console.error(`${MODULE_ID} |`, err, s);
-        ui.notifications.error(game.i18n.format("GMEI.Errors.CreateFailed", { error: err.message }));
+        ui.notifications.error(`New Tavern: nie udało się zapisać przedmiotu: ${err.message}`);
       }
       return;
     }
@@ -464,13 +461,13 @@ export default class NewTavernWizard extends HandlebarsApplicationMixin(Applicat
       if ( actor ) [item] = await actor.createEmbeddedDocuments("Item", [data]);
       else item = await Item.implementation.create({ ...data, folder: s.destination.folder || null });
       ui.notifications.info(actor
-        ? game.i18n.format("GMEI.Notifications.Added", { item: item.name, actor: actor.name })
-        : game.i18n.format("GMEI.Notifications.Created", { item: item.name }));
+        ? `Dodano „${item.name}” do karty: ${actor.name}.`
+        : `Utworzono „${item.name}” w katalogu przedmiotów.`);
       if ( s.destination.openSheet ) item.sheet.render(true);
       this.close();
     } catch(err) {
       console.error(`${MODULE_ID} |`, err, data);
-      ui.notifications.error(game.i18n.format("GMEI.Errors.CreateFailed", { error: err.message }));
+      ui.notifications.error(`New Tavern: nie udało się zapisać przedmiotu: ${err.message}`);
     }
   }
 }
