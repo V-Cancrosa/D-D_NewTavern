@@ -15,6 +15,12 @@ Cztery kroki, które można przeskakiwać:
 3. **Użycie i ładunki**: brak, nałożenie efektu, leczenie, obrażenia albo rzut obronny; ładunki z odnawianiem i znikanie po zużyciu.
 4. **Podsumowanie**: postać albo katalog przedmiotów (folder) i opcjonalne otwarcie karty przedmiotu.
 
+## Edycja istniejących przedmiotów
+
+Na karcie postaci kliknij **⋮** przy przedmiocie i wybierz **Edit**: otworzy się ten sam edytor, wypełniony danymi przedmiotu. Oryginalna karta przedmiotu jest pod pozycją **Karta systemu**. Edytor otworzysz też ikoną różdżki w nagłówku karty przedmiotu albo z menu kontekstowego w katalogu przedmiotów. Zamianę „Edit” można wyłączyć w ustawieniach modułu.
+
+Edytor zmienia tylko to, co pokazuje. Zmiany efektów, których nie rozpoznaje, zostają zachowane i oznaczone jako „Własna zmiana”. Inne aktywności, sformatowany opis (jeśli go nie zmienisz) i pozostałe pola systemu zostają bez zmian. Edycja obejmuje broń, wyposażenie, materiały eksploatacyjne, narzędzia, łup i cechy.
+
 Panel po prawej pokazuje opis efektów tak, jak przeczyta go gracz. Sekcja „Zaawansowane” pokazuje zapis w dnd5e. Kreator zapisuje efekty w formacie właściwym dla wersji: na Foundry 14 / dnd5e 6 `system.changes` z nowymi kluczami (`system.rolls.*`, `movement.speeds.*`, `senses.ranges.*`), na Foundry 13 / dnd5e 5 w dotychczasowym formacie.
 
 D&D5e 6.x wymaga Foundry VTT 14.
