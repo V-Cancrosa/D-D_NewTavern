@@ -137,3 +137,7 @@
 
 /* Przycisk w katalogu przedmiotów */
 .new-tavern-directory-button { flex: 1 0 100%; }
+
+/* Zmiany spoza kreatora */
+.nt-wizard .nt-raw { border-style: dashed; }
+.nt-wizard .nt-raw-label { font-family: monospace; font-size: 0.85em; word-break: break-all; flex: 1; }

@@ -1,7 +1,8 @@
 import { ABILITIES, FORMULA_REFS, OPERATIONS, VALUE_KINDS, allowedKinds, getSetOptions, getTarget, getTargets }
   from "./catalog.js";
-import { DURATION_UNITS, EXPIRY, buildItemData, describeDuration, describeRow, isV14, rowToChanges }
+import { DURATION_UNITS, EXPIRY, buildItemData, describeDuration, describeRow, isV14, rowToChanges, saveItem }
   from "./builder.js";
+import { readItem } from "./reader.js";
 import { PRESETS } from "./presets.js";
 
 const MODULE_ID = "new-tavern";
@@ -78,8 +79,19 @@ function defaultNum(t, op) {
 
 export default class NewTavernWizard extends HandlebarsApplicationMixin(ApplicationV2) {
   constructor(options = {}) {
+    const item = options.item ?? null;
+    if ( item ) options = { ...options, id: `new-tavern-edit-${item.id}` };
     super(options);
-    this.state = defaultState(options.actor);
+    this.item = item;
+    if ( item ) {
+      this.state = readItem(item, defaultState(item.parent));
+      this.state.step = 2;
+    } else this.state = defaultState(options.actor);
+  }
+
+  /** @override */
+  get title() {
+    return this.item ? `New Tavern · edycja: ${this.item.name}` : "New Tavern · kreator przedmiotu";
   }
 
   static DEFAULT_OPTIONS = {
@@ -106,7 +118,8 @@ export default class NewTavernWizard extends HandlebarsApplicationMixin(Applicat
       toggleTag: NewTavernWizard.#onToggleTag,
       toggleStatus: NewTavernWizard.#onToggleStatus,
       usageKind: NewTavernWizard.#onUsageKind,
-      create: NewTavernWizard.#onCreate
+      create: NewTavernWizard.#onCreate,
+      openSheet: NewTavernWizard.#onOpenSheet
     }
   };
 
@@ -155,6 +168,8 @@ export default class NewTavernWizard extends HandlebarsApplicationMixin(Applicat
 
     const effect = this.effect;
     const rows = (effect?.rows ?? []).map((r, index) => {
+      if ( r.raw ) return { index, isRaw: true, sentence: describeRow(r), groups: [], ops: [], kinds: [], dice: [],
+        refs: [], tags: [], tech: rowToChanges(r).map(c => `${c.key} · ${c.type ?? c.mode} · ${c.value}`) };
       const t = getTarget(r.target);
       const kinds = allowedKinds(t, r.op);
       return {
@@ -237,7 +252,10 @@ export default class NewTavernWizard extends HandlebarsApplicationMixin(Applicat
       toWorld: !s.destination.actorId,
       summary,
       usageSummary: this.#describeUsage(),
-      selectedActor: game.actors.get(s.destination.actorId)?.name ?? ""
+      selectedActor: game.actors.get(s.destination.actorId)?.name ?? "",
+      editing: !!this.item,
+      ownerName: this.item?.parent?.name ?? "",
+      otherActivities: s.editing?.otherActivities ?? 0
     };
   }
 
@@ -416,6 +434,10 @@ export default class NewTavernWizard extends HandlebarsApplicationMixin(Applicat
     this.render();
   }
 
+  static #onOpenSheet() {
+    this.item?.sheet.render(true);
+  }
+
   static async #onCreate() {
     if ( !game.user.isGM ) return ui.notifications.warn(game.i18n.localize("GMEI.Errors.GmOnly"));
     const s = this.state;
@@ -423,6 +445,17 @@ export default class NewTavernWizard extends HandlebarsApplicationMixin(Applicat
       s.step = 1;
       this.render();
       return ui.notifications.warn("Podaj nazwę przedmiotu.");
+    }
+    if ( this.item ) {
+      try {
+        await saveItem(this.item, s);
+        ui.notifications.info(game.i18n.format("GMEI.Notifications.Saved", { item: this.item.name }));
+        this.close();
+      } catch(err) {
+        console.error(`${MODULE_ID} |`, err, s);
+        ui.notifications.error(game.i18n.format("GMEI.Errors.CreateFailed", { error: err.message }));
+      }
+      return;
     }
     const actor = game.actors.get(s.destination.actorId) ?? null;
     const data = buildItemData(s, { forActor: !!actor });

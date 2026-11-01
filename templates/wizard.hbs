@@ -15,7 +15,7 @@
       <span class="nt-step-no">{{#if done}}<i class="fa-solid fa-check"></i>{{else}}{{id}}{{/if}}</span>{{label}}
     </button>
     {{/each}}
-    <p class="nt-hint">Kroki można przeskakiwać. Przycisk „Utwórz” działa na każdym etapie.</p>
+    <p class="nt-hint">Kroki można przeskakiwać. Przycisk {{#if editing}}„Zapisz zmiany”{{else}}„Utwórz”{{/if}} działa na każdym etapie.</p>
   </nav>
 
   <section class="nt-main">
@@ -148,6 +148,15 @@
       <h3>Co zmienia</h3>
       {{#unless rows.length}}<p class="nt-hint">Brak zmian. Dodaj pierwszą poniżej.</p>{{/unless}}
       {{#each rows}}
+      {{#if isRaw}}
+      <div class="nt-change nt-raw" data-row="{{index}}">
+        <div class="nt-change-top">
+          <span class="nt-raw-label"><i class="fa-solid fa-code"></i> {{sentence}}</span>
+          <button type="button" class="nt-icon" data-action="removeRow" aria-label="Usuń zmianę"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <span class="nt-hint">Zmiana spoza kreatora – zostanie zachowana bez zmian. Edytujesz ją w karcie systemu.</span>
+      </div>
+      {{else}}
       <div class="nt-change" data-row="{{index}}">
         <div class="nt-change-top">
           <select data-field="effects.{{@root.state.current}}.rows.{{index}}.target" aria-label="Co zmienić" class="nt-target">
@@ -210,6 +219,7 @@
         </div>
         <div class="nt-sentence-out">{{sentence}}</div>
       </div>
+      {{/if}}
       {{/each}}
       <button type="button" class="nt-add" data-action="addRow"><i class="fa-solid fa-plus"></i> Dodaj zmianę</button>
     </div>
@@ -330,6 +340,15 @@
     {{!-- KROK 4: PODSUMOWANIE --}}
     {{#if step4}}
     <h2>Podsumowanie</h2>
+    {{#if editing}}
+    <div class="nt-card">
+      <h3>Edycja przedmiotu</h3>
+      <p>Zmieniasz „{{state.item.name}}”{{#if ownerName}} na karcie: {{ownerName}}{{/if}}.</p>
+      <p class="nt-hint">Kreator zmienia tylko to, co widzisz w krokach 1–3. Sformatowany opis (jeśli go nie ruszasz),
+        {{#if otherActivities}}inne aktywności ({{otherActivities}}), {{/if}}zmiany spoza kreatora i pozostałe pola systemu zostają bez zmian.</p>
+      <button type="button" class="nt-add" data-action="openSheet"><i class="fa-solid fa-file-lines"></i> Otwórz kartę systemu</button>
+    </div>
+    {{else}}
     <div class="nt-card">
       <h3>Gdzie utworzyć</h3>
       <div class="nt-grid-2">
@@ -350,6 +369,7 @@
       </div>
       <label class="nt-check-inline"><input type="checkbox" data-field="destination.openSheet" {{#if state.destination.openSheet}}checked{{/if}}> Otwórz kartę przedmiotu po utworzeniu (pełne opcje systemu)</label>
     </div>
+    {{/if}}
     {{/if}}
   </section>
 
@@ -382,7 +402,7 @@
       {{#unless isLast}}<button type="button" data-action="next">Dalej <i class="fa-solid fa-arrow-right"></i></button>{{/unless}}
       <button type="button" class="nt-primary" data-action="create">
         <i class="fa-solid fa-wand-magic-sparkles"></i>
-        {{#if selectedActor}}Dodaj do: {{selectedActor}}{{else}}Utwórz przedmiot{{/if}}
+        {{#if editing}}Zapisz zmiany{{else}}{{#if selectedActor}}Dodaj do: {{selectedActor}}{{else}}Utwórz przedmiot{{/if}}{{/if}}
       </button>
     </div>
   </aside>

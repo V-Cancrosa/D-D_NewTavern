@@ -39,6 +39,7 @@ export function valueText(row, target) {
 
 /** Zdanie opisujące jedną zmianę. */
 export function describeRow(row) {
+  if ( row.raw ) return `Własna zmiana: ${row.raw.key} (${row.raw.type ?? row.raw.mode}) ${row.raw.value}`;
   const t = getTarget(row.target);
   if ( !t ) return "Wybierz, co zmienia efekt.";
   const v = valueText(row, t);
@@ -98,6 +99,7 @@ function makeChange(key, op, value) {
 
 /** Zamienia wiersz kreatora na listę zmian (jeden wiersz może dać kilka kluczy). */
 export function rowToChanges(row) {
+  if ( row.raw ) return [foundry.utils.deepClone(row.raw)];
   const t = getTarget(row.target);
   if ( !t ) return [];
   const opKey = row.op === "disadvantage" ? "advantage" : row.op;
@@ -141,7 +143,7 @@ export function buildEffect(effect, img) {
 }
 
 /** Buduje aktywność („co się dzieje po użyciu”). */
-function buildActivity(state, timedIds) {
+export function buildActivity(state, timedIds) {
   const u = state.usage;
   let kind = u.kind;
   if ( kind === "none" && timedIds.length ) kind = "utility";
@@ -152,7 +154,7 @@ function buildActivity(state, timedIds) {
   };
   const scaling = { mode: state.uses.enabled && u.scaling ? "whole" : "", number: 1 };
   const activity = {
-    _id: foundry.utils.randomID(),
+    _id: state.editing?.activityType === kind ? state.editing.activityId : foundry.utils.randomID(),
     type: kind === "attack" ? "attack" : kind,
     activation: { type: u.activation || "action" },
     consumption,
@@ -216,4 +218,91 @@ export function buildItemData(state, { forActor = false } = {}) {
     system,
     effects
   };
+}
+
+/* -------------------------------------------- */
+/*  Zapis zmian w istniejącym przedmiocie       */
+/* -------------------------------------------- */
+
+/**
+ * Zapisuje stan kreatora w istniejącym przedmiocie. Zmienia tylko to, czym kreator zarządza:
+ * nieznane zmiany efektów, inne aktywności i sformatowany opis zostają nietknięte.
+ * @param {Item} item
+ * @param {object} state
+ */
+export async function saveItem(item, state) {
+  const i = state.item;
+  const built = buildItemData(state, { forActor: item.isEmbedded });
+  const sys = built.system;
+  const ed = state.editing ?? {};
+
+  // Pola przedmiotu
+  const properties = new Set(item.system.properties ?? []);
+  if ( i.magical || Number(i.magicalBonus) ) properties.add("mgc");
+  else properties.delete("mgc");
+  const update = {
+    name: built.name, img: built.img,
+    "system.quantity": sys.quantity, "system.rarity": sys.rarity, "system.attunement": sys.attunement,
+    "system.properties": [...properties]
+  };
+  if ( "type" in item.system && (typeof item.system.type === "object") ) update["system.type.value"] = i.subtype || "";
+  if ( i.description !== i.descriptionOriginal ) update["system.description.value"] = sys.description.value;
+  if ( item.isEmbedded && ("equipped" in item.system) ) {
+    update["system.equipped"] = !!i.equipped;
+    if ( i.equipped && (i.attunement === "required") ) update["system.attuned"] = true;
+  }
+  if ( item.type === "equipment" ) update["system.armor.magicalBonus"] = Number(i.magicalBonus) || null;
+  else if ( "magicalBonus" in item.system ) update["system.magicalBonus"] = Number(i.magicalBonus) || null;
+  if ( sys.damage ) {
+    update["system.damage.base.number"] = sys.damage.base.number;
+    update["system.damage.base.denomination"] = sys.damage.base.denomination;
+    update["system.damage.base.types"] = sys.damage.base.types;
+  }
+  if ( sys.uses ) {
+    update["system.uses.max"] = sys.uses.max;
+    update["system.uses.recovery"] = sys.uses.recovery;
+    if ( "autoDestroy" in sys.uses ) update["system.uses.autoDestroy"] = sys.uses.autoDestroy;
+  } else if ( ed.hadUses ) update["system.uses.max"] = "";
+  await item.update(update);
+
+  // Efekty
+  const keep = new Set(state.effects.map(e => e.id));
+  const toDelete = (ed.effectIds ?? []).filter(id => !keep.has(id) && item.effects.has(id));
+  if ( toDelete.length ) await item.deleteEmbeddedDocuments("ActiveEffect", toDelete);
+  const allEffects = state.effects.map(e => buildEffect(e, item.img));
+  const toUpdate = [];
+  const toCreate = [];
+  for ( const data of allEffects ) {
+    if ( item.effects.has(data._id) ) {
+      const { img, ...rest } = data;
+      if ( !Object.keys(rest.duration).length ) rest.duration = isV14()
+        ? { value: null, expiry: null } : { seconds: null, rounds: null, turns: null };
+      toUpdate.push(rest);
+    } else toCreate.push(data);
+  }
+  if ( toUpdate.length ) {
+    try {
+      await item.updateEmbeddedDocuments("ActiveEffect", toUpdate);
+    } catch(err) {
+      // Na wypadek gdyby schemat nie przyjął pustego „expiry” – zapis bez czyszczenia momentu wygaśnięcia.
+      for ( const u of toUpdate ) if ( u.duration && ("expiry" in u.duration) && (u.duration.expiry === null) ) {
+        delete u.duration.expiry;
+      }
+      await item.updateEmbeddedDocuments("ActiveEffect", toUpdate);
+    }
+  }
+  if ( toCreate.length ) await item.createEmbeddedDocuments("ActiveEffect", toCreate, { keepId: true });
+
+  // Aktywność
+  if ( item.type === "loot" || !item.system.activities ) return item;
+  const timedIds = allEffects.filter(e => !e.transfer).map(e => e._id);
+  const activity = buildActivity(state, timedIds);
+  const existing = ed.activityId && item.system.activities.get(ed.activityId);
+  if ( existing && (!activity || (existing.type !== activity.type)) ) await item.deleteActivity(ed.activityId);
+  if ( activity ) {
+    const { _id, ...data } = activity;
+    if ( existing && (existing.type === activity.type) ) await item.updateActivity(_id, data);
+    else await item.update({ [`system.activities.${_id}`]: activity });
+  }
+  return item;
 }
