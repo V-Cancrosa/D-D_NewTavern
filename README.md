@@ -10,8 +10,18 @@ Moduł dla Foundry VTT 13–14 i D&D5e 5.2.5–6.0.6. Kreator przedmiotów z akt
 
 D&D5e 6.x wymaga Foundry VTT 14.
 
-## Instalacja na The Forge
+## Instalacja (Manifest URL)
 
-The Forge hostuje Foundry VTT, więc New Tavern pozostaje modułem Foundry i nie potrzebuje odrębnej wersji kodu. Na obecnym etapie użyj w panelu The Forge **Import Wizard**, aby wgrać archiwum `new-tavern.zip` jako własny moduł. Następnie uruchom świat i aktywuj New Tavern w **Manage Modules**.
+W Foundry VTT lub na The Forge wybierz **Install Module** i wklej adres manifestu:
 
-Instalacja jednym adresem manifestu zostanie dodana wraz z pierwszym opublikowanym wydaniem GitHub zawierającym archiwum modułu.
+```
+https://github.com/V-Cancrosa/D-D_NewTavern/releases/latest/download/module.json
+```
+
+Następnie uruchom świat i aktywuj New Tavern w **Manage Modules**.
+
+## Wydawanie nowej wersji
+
+1. Podnieś `version` w `module.json` i scal zmiany do `main`.
+2. Na GitHubie utwórz wydanie (**Releases → Draft a new release**) z tagiem `vX.Y.Z`, np. `v0.3.0`.
+3. Workflow `.github/workflows/release.yml` dołączy do wydania `module.json` i `new-tavern.zip`; od tej chwili Manifest URL wskazuje nową wersję.
