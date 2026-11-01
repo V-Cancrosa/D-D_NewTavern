@@ -1,10 +1,28 @@
 {
   "GMEI": {
-    "Form": { "Title": "Dodaj przedmiot z efektami", "Untitled": "Nowy przedmiot" },
-    "SheetButton": "Dodaj przedmiot z efektami",
-    "DirectoryAction": "Dodaj przedmiot z efektami",
-    "Settings": { "MenuName": "Przedmiot z efektami", "MenuLabel": "Otwórz kreator", "MenuHint": "Jako MG utwórz przedmiot z aktywnymi efektami i dodaj go do postaci." },
-    "Errors": { "GmOnly": "Tylko MG może tworzyć przedmioty z efektami.", "NoActor": "Wybierz kartę postaci, do której ma zostać dodany przedmiot.", "UnsupportedCore": "New Tavern wspiera Foundry VTT 13 i 14.", "UnsupportedSystem": "New Tavern wymaga D&D5e 5.2.5 lub nowszego.", "Dnd6NeedsV14": "D&D5e 6.x wymaga Foundry VTT 14; na Foundry 13 użyj D&D5e 5.x." },
-    "Notifications": { "Added": "Dodano „{item}” do karty: {actor}." }
+    "Form": {
+      "Title": "New Tavern · kreator przedmiotu",
+      "Untitled": "Nowy przedmiot"
+    },
+    "SheetButton": "New Tavern: nowy przedmiot dla tej postaci",
+    "DirectoryAction": "New Tavern: nowy przedmiot",
+    "Settings": {
+      "MenuName": "Kreator przedmiotów",
+      "MenuLabel": "Otwórz kreator",
+      "MenuHint": "Jako MG utwórz przedmiot z efektami, czasem trwania, aktywnością i ładunkami – bez znajomości kluczy dnd5e."
+    },
+    "Errors": {
+      "GmOnly": "Tylko MG może tworzyć przedmioty z efektami.",
+      "NoActor": "Wybierz kartę postaci, do której ma zostać dodany przedmiot.",
+      "UnsupportedCore": "New Tavern wspiera Foundry VTT 13 i 14.",
+      "UnsupportedSystem": "New Tavern wymaga D&D5e 5.2.5 lub nowszego.",
+      "Dnd6NeedsV14": "D&D5e 6.x wymaga Foundry VTT 14; na Foundry 13 użyj D&D5e 5.x.",
+      "CreateFailed": "Nie udało się utworzyć przedmiotu: {error}"
+    },
+    "Notifications": {
+      "Added": "Dodano „{item}” do karty: {actor}.",
+      "Created": "Utworzono „{item}” w katalogu przedmiotów."
+    },
+    "DirectoryButton": "New Tavern"
   }
 }
