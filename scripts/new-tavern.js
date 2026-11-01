@@ -1,89 +1,98 @@
+import NewTavernWizard from "./wizard.js";
+
 const MODULE_ID = "new-tavern";
-const BaseForm = foundry.appv1?.api?.FormApplication ?? globalThis.FormApplication;
+const ICON = "fa-solid fa-wand-magic-sparkles";
 
-class GmEffectItemForm extends BaseForm {
-  constructor(options = {}) {
-    super({}, options);
-    this.targetActor = options.actor ?? null;
-  }
-
-  static get defaultOptions() {
-    return foundry.utils.mergeObject(super.defaultOptions, {
-      id: "new-tavern-form",
-      classes: [MODULE_ID],
-      title: game.i18n.localize("GMEI.Form.Title"),
-      template: \`modules/\${MODULE_ID}/templates/item-form.hbs\`,
-      width: 620,
-      height: "auto",
-      closeOnSubmit: true
-    });
-  }
-
-  getData() {
-    return {
-      actors: game.actors.filter(a => a.isOwner).map(a => ({
-        id: a.id, name: a.name, selected: a.id === this.targetActor?.id
-      })),
-      types: ["loot", "equipment", "weapon", "consumable", "tool", "feat"],
-      modes: Object.entries(CONST.ACTIVE_EFFECT_MODES).map(([label, value]) => ({label, value}))
-    };
-  }
-
-  async _updateObject(_event, formData) {
-    if (!game.user.isGM) return ui.notifications.warn(game.i18n.localize("GMEI.Errors.GmOnly"));
-    const data = foundry.utils.expandObject(formData);
-    const actor = game.actors.get(data.actorId);
-    if (!actor) return ui.notifications.warn(game.i18n.localize("GMEI.Errors.NoActor"));
-    const effect = {
-      name: data.effect?.name?.trim() || data.name,
-      icon: data.effect?.icon?.trim() || "icons/svg/aura.svg",
-      transfer: Boolean(data.effect?.transfer),
-      changes: data.effect?.key?.trim() && data.effect.value !== ""
-        ? [{key: data.effect.key.trim(), mode: Number(data.effect.mode), value: String(data.effect.value), priority: Number(data.effect.priority) || 20}]
-        : []
-    };
-    const item = {
-      name: data.name?.trim() || game.i18n.localize("GMEI.Form.Untitled"),
-      type: data.type || "loot",
-      img: data.img?.trim() || "icons/svg/item-bag.svg",
-      system: {description: {value: data.description || ""}, quantity: Number(data.quantity) || 1},
-      effects: effect.changes.length ? [effect] : []
-    };
-    await actor.createEmbeddedDocuments("Item", [item]);
-    ui.notifications.info(game.i18n.format("GMEI.Notifications.Added", {item: item.name, actor: actor.name}));
-  }
-}
-
-function openForm(actor = null) {
-  if (!game.user.isGM) return ui.notifications.warn(game.i18n.localize("GMEI.Errors.GmOnly"));
-  new GmEffectItemForm({actor}).render(true);
+/** Otwiera kreator (tylko MG). */
+export function openWizard(actor = null) {
+  if ( !game.user.isGM ) return ui.notifications.warn(game.i18n.localize("GMEI.Errors.GmOnly"));
+  return new NewTavernWizard({ actor }).render(true);
 }
 
 Hooks.once("init", () => {
   game.settings.registerMenu(MODULE_ID, "createEffectItem", {
     name: "GMEI.Settings.MenuName", label: "GMEI.Settings.MenuLabel",
-    hint: "GMEI.Settings.MenuHint", icon: "fas fa-wand-magic-sparkles",
-    type: GmEffectItemForm, restricted: true
+    hint: "GMEI.Settings.MenuHint", icon: ICON,
+    type: NewTavernWizard, restricted: true
   });
 });
 
-Hooks.on("renderActorSheet", (app, html) => {
-  if (!game.user.isGM || !app.actor) return;
-  const root = html instanceof HTMLElement ? html : html?.[0];
-  const header = root?.querySelector(".window-header");
-  if (!header || header.querySelector("[data-gmei-button]")) return;
+Hooks.once("ready", () => {
+  const mod = game.modules.get(MODULE_ID);
+  if ( mod ) mod.api = { open: openWizard, NewTavernWizard };
+  if ( !game.user.isGM ) return;
+  const gen = game.release?.generation ?? 0;
+  if ( gen < 13 ) ui.notifications.warn(game.i18n.localize("GMEI.Errors.UnsupportedCore"));
+  if ( game.system.id !== "dnd5e" ) ui.notifications.warn(game.i18n.localize("GMEI.Errors.UnsupportedSystem"));
+  else if ( foundry.utils.isNewerVersion(game.system.version, "5.99.99") && (gen < 14) ) {
+    ui.notifications.warn(game.i18n.localize("GMEI.Errors.Dnd6NeedsV14"));
+  }
+});
+
+/* -------------------------------------------- */
+/*  Przyciski                                   */
+/* -------------------------------------------- */
+
+const asElement = html => (html instanceof HTMLElement ? html : html?.[0]);
+
+/** Przycisk w nagłówku karty postaci. */
+function addSheetButton(app, html) {
+  if ( !game.user.isGM || !app.actor ) return;
+  const header = asElement(html)?.closest?.(".app, .application")?.querySelector(".window-header")
+    ?? asElement(html)?.querySelector(".window-header") ?? app.element?.querySelector?.(".window-header");
+  if ( !header || header.querySelector("[data-new-tavern]") ) return;
   const button = document.createElement("button");
-  button.type = "button"; button.className = "header-control icon fa-solid fa-wand-magic-sparkles";
-  button.dataset.gmeiButton = "true"; button.title = game.i18n.localize("GMEI.SheetButton");
-  button.addEventListener("click", () => openForm(app.actor));
-  header.append(button);
-});
-Hooks.on("renderActorSheetV2", (app, html) => Hooks.callAll("renderActorSheet", app, html));
-Hooks.on("getActorDirectoryEntryContext", (_html, options) => {
-  if (!game.user.isGM) return;
-  options.push({
-    name: game.i18n.localize("GMEI.DirectoryAction"), icon: "fas fa-wand-magic-sparkles",
-    condition: li => Boolean(game.actors.get(li.data("documentId"))),
-    callback: li => openForm(game.actors.get(li.data("documentId")))
+  button.type = "button";
+  button.className = `header-control icon ${ICON}`;
+  button.dataset.newTavern = "true";
+  button.dataset.tooltip = game.i18n.localize("GMEI.SheetButton");
+  button.setAttribute("aria-label", game.i18n.localize("GMEI.SheetButton"));
+  button.addEventListener("click", event => {
+    event.preventDefault();
+    event.stopPropagation();
+    openWizard(app.actor);
   });
+  const close = header.querySelector('[data-action="close"]');
+  if ( close ) close.before(button);
+  else header.append(button);
+}
+Hooks.on("renderActorSheet", addSheetButton);
+Hooks.on("renderActorSheetV2", addSheetButton);
+
+/** Przycisk obok „Create Item” w katalogu przedmiotów. */
+Hooks.on("renderItemDirectory", (app, html) => {
+  if ( !game.user.isGM ) return;
+  const root = asElement(html);
+  const actions = root?.querySelector(".header-actions");
+  if ( !actions || actions.querySelector("[data-new-tavern]") ) return;
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "new-tavern-directory-button";
+  button.dataset.newTavern = "true";
+  button.innerHTML = `<i class="${ICON}" inert></i> ${game.i18n.localize("GMEI.DirectoryButton")}`;
+  button.addEventListener("click", () => openWizard());
+  actions.append(button);
 });
+
+/** Opcja w menu kontekstowym postaci w katalogu aktorów. */
+function addActorContext(_app, options) {
+  if ( !game.user.isGM ) return;
+  const actorFrom = li => {
+    const el = asElement(li);
+    const id = el?.dataset?.entryId ?? el?.dataset?.documentId;
+    return game.actors.get(id);
+  };
+  const name = game.i18n.localize("GMEI.DirectoryAction");
+  if ( options.some(o => (o.name ?? o.label) === name) ) return;
+  const v14 = (game.release?.generation ?? 13) >= 14;
+  options.push({
+    name, label: name,
+    icon: v14 ? ICON : `<i class="${ICON}"></i>`,
+    condition: li => !!actorFrom(li),
+    visible: target => !!actorFrom(target),
+    callback: li => openWizard(actorFrom(li)),
+    onClick: (_event, target) => openWizard(actorFrom(target))
+  });
+}
+Hooks.on("getActorContextOptions", addActorContext);
+Hooks.on("getActorDirectoryEntryContext", addActorContext);

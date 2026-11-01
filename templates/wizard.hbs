@@ -1,0 +1,389 @@
+<div class="nt-body">
+
+  {{!-- Nawigacja kroków --}}
+  <nav class="nt-steps" aria-label="Kroki">
+    <div class="nt-item-head">
+      <button type="button" class="nt-portrait" data-action="pickImage" aria-label="Zmień obraz">
+        <img src="{{img}}" alt="">
+      </button>
+      <div class="nt-item-title">
+        <span class="nt-name">{{#if state.item.name}}{{state.item.name}}{{else}}Nowy przedmiot{{/if}}</span>
+      </div>
+    </div>
+    {{#each steps}}
+    <button type="button" class="nt-step {{#if active}}active{{/if}} {{#if done}}done{{/if}}" data-action="step" data-step="{{id}}">
+      <span class="nt-step-no">{{#if done}}<i class="fa-solid fa-check"></i>{{else}}{{id}}{{/if}}</span>{{label}}
+    </button>
+    {{/each}}
+    <p class="nt-hint">Kroki można przeskakiwać. Przycisk „Utwórz” działa na każdym etapie.</p>
+  </nav>
+
+  <section class="nt-main">
+
+    {{!-- KROK 1: PRZEDMIOT --}}
+    {{#if step1}}
+    <h2>Przedmiot</h2>
+    <div class="nt-card">
+      <h3>Zacznij od szablonu (opcjonalnie)</h3>
+      <div class="nt-presets">
+        {{#each presets}}
+        <button type="button" class="nt-preset" data-action="preset" data-preset="{{id}}">
+          <strong>{{label}}</strong><span>{{hint}}</span>
+        </button>
+        {{/each}}
+      </div>
+    </div>
+
+    <div class="nt-card">
+      <label class="nt-field">Nazwa
+        <input type="text" data-field="item.name" value="{{state.item.name}}" placeholder="np. Pierścień ochrony" class="nt-title-input">
+      </label>
+      <div class="nt-label">Rodzaj</div>
+      <div class="nt-tiles nt-tiles-6">
+        {{#each itemTypes}}
+        <button type="button" class="nt-tile {{#if active}}active{{/if}}" data-action="itemType" data-value="{{value}}">{{label}}</button>
+        {{/each}}
+      </div>
+      <div class="nt-grid-3">
+        {{#if hasSubtypes}}
+        <label class="nt-field">Podtyp
+          <select data-field="item.subtype">
+            <option value="">—</option>
+            {{#each subtypes}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+          </select>
+        </label>
+        {{/if}}
+        <label class="nt-field">Rzadkość
+          <select data-field="item.rarity">
+            <option value="">—</option>
+            {{#each rarities}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+          </select>
+        </label>
+        <label class="nt-field">Dostrojenie
+          <select data-field="item.attunement">
+            <option value="">Nie wymaga</option>
+            {{#each attunements}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+          </select>
+        </label>
+        <label class="nt-field">Ilość
+          <input type="number" min="1" data-field="item.quantity" data-dtype="Number" value="{{state.item.quantity}}">
+        </label>
+        {{#if hasMagicalBonus}}
+        <label class="nt-field">Premia magiczna (+X)
+          <input type="number" min="0" max="5" data-field="item.magicalBonus" data-dtype="Number" value="{{state.item.magicalBonus}}">
+        </label>
+        {{/if}}
+      </div>
+      {{#if isWeapon}}
+      <div class="nt-sentence">
+        <span>Obrażenia broni:</span>
+        <input type="number" min="0" class="nt-num" data-field="item.damage.count" data-dtype="Number" value="{{state.item.damage.count}}" aria-label="Liczba kości">
+        <select data-field="item.damage.die" data-dtype="Number" aria-label="Kość">
+          {{#each dieOptions}}<option value="{{value}}" {{#if (eq value ../state.item.damage.die)}}selected{{/if}}>{{label}}</option>{{/each}}
+        </select>
+        <select data-field="item.damage.type" aria-label="Rodzaj obrażeń">
+          {{#each weaponDamageTypes}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+        </select>
+      </div>
+      {{/if}}
+      <div class="nt-checks">
+        <label><input type="checkbox" data-field="item.magical" {{#if state.item.magical}}checked{{/if}}> Magiczny</label>
+        <label><input type="checkbox" data-field="item.equipped" {{#if state.item.equipped}}checked{{/if}}> Od razu założony (i dostrojony)</label>
+      </div>
+      <label class="nt-field">Opis
+        <textarea rows="3" data-field="item.description">{{state.item.description}}</textarea>
+      </label>
+    </div>
+    {{/if}}
+
+    {{!-- KROK 2: EFEKTY --}}
+    {{#if step2}}
+    <div class="nt-row-head">
+      <h2>Efekty</h2>
+      <div class="nt-effect-tabs">
+        {{#each effects}}
+        <button type="button" class="nt-chip {{#if active}}active{{/if}}" data-action="selectEffect" data-index="{{index}}">{{name}}</button>
+        {{/each}}
+        <button type="button" class="nt-chip nt-dashed" data-action="addEffect"><i class="fa-solid fa-plus"></i> Efekt</button>
+      </div>
+    </div>
+
+    {{#if effect}}
+    <div class="nt-card">
+      <div class="nt-grid-2">
+        <label class="nt-field">Nazwa efektu
+          <input type="text" data-field="effects.{{state.current}}.name" value="{{effect.name}}">
+        </label>
+        <div class="nt-right"><button type="button" class="nt-link" data-action="removeEffect"><i class="fa-solid fa-trash"></i> Usuń efekt</button></div>
+      </div>
+      <h3>Kiedy działa</h3>
+      <div class="nt-tiles nt-tiles-2">
+        <button type="button" class="nt-tile nt-tile-wide {{#unless timed}}active{{/unless}}" data-action="effectMode" data-value="passive">
+          <strong>Stały</strong><span>gdy przedmiot jest założony / dostrojony</span>
+        </button>
+        <button type="button" class="nt-tile nt-tile-wide {{#if timed}}active{{/if}}" data-action="effectMode" data-value="timed">
+          <strong>Czasowy</strong><span>nakładany po użyciu przedmiotu</span>
+        </button>
+      </div>
+      {{#if timed}}
+      <div class="nt-sentence">
+        {{#if showDurationValue}}
+        <span>Trwa</span>
+        <input type="number" min="1" class="nt-num" data-field="effects.{{state.current}}.duration.value" data-dtype="Number" value="{{effect.duration.value}}" aria-label="Czas trwania">
+        <select data-field="effects.{{state.current}}.duration.units" aria-label="Jednostka">
+          {{#each durationUnits}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+        </select>
+        {{/if}}
+        {{#if v14}}
+        <span>{{#if showDurationValue}}i kończy się{{else}}Kończy się{{/if}}</span>
+        <select data-field="effects.{{state.current}}.duration.expiry" aria-label="Kiedy się kończy">
+          {{#each expiries}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+        </select>
+        {{/if}}
+      </div>
+      {{/if}}
+    </div>
+
+    <div class="nt-card">
+      <h3>Co zmienia</h3>
+      {{#unless rows.length}}<p class="nt-hint">Brak zmian. Dodaj pierwszą poniżej.</p>{{/unless}}
+      {{#each rows}}
+      <div class="nt-change" data-row="{{index}}">
+        <div class="nt-change-top">
+          <select data-field="effects.{{@root.state.current}}.rows.{{index}}.target" aria-label="Co zmienić" class="nt-target">
+            {{#each groups}}
+            <optgroup label="{{label}}">
+              {{#each options}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+            </optgroup>
+            {{/each}}
+          </select>
+          <div class="nt-pills">
+            {{#each ops}}
+            <button type="button" class="nt-pill {{#if active}}active{{/if}}" data-action="rowSet" data-key="op" data-value="{{value}}">{{label}}</button>
+            {{/each}}
+          </div>
+          <button type="button" class="nt-icon" data-action="removeRow" aria-label="Usuń zmianę"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        {{#if isSet}}
+        <div class="nt-pills nt-wrap">
+          {{#each tags}}
+          <button type="button" class="nt-chip {{#if active}}active{{/if}}" data-action="toggleTag" data-value="{{value}}">{{label}}</button>
+          {{/each}}
+        </div>
+        {{/if}}
+
+        <div class="nt-change-value">
+          {{#if showKinds}}
+          <div class="nt-seg" role="group" aria-label="Rodzaj wartości">
+            {{#each kinds}}
+            <button type="button" class="{{#if active}}active{{/if}}" data-action="rowSet" data-key="kind" data-value="{{value}}">{{label}}</button>
+            {{/each}}
+          </div>
+          {{/if}}
+          {{#if isNumber}}
+          <span class="nt-stepper">
+            <button type="button" data-action="rowStep" data-dir="-1" aria-label="Mniej">−</button>
+            <input type="number" class="nt-num" data-field="effects.{{@root.state.current}}.rows.{{index}}.num" data-dtype="Number" value="{{num}}" aria-label="Wartość">
+            <button type="button" data-action="rowStep" data-dir="1" aria-label="Więcej">+</button>
+          </span>
+          {{/if}}
+          {{#if isDice}}
+          <span class="nt-stepper">
+            <button type="button" data-action="rowStep" data-dir="-1" aria-label="Mniej kości">−</button>
+            <span class="nt-count">{{count}}</span>
+            <button type="button" data-action="rowStep" data-dir="1" aria-label="Więcej kości">+</button>
+          </span>
+          <span class="nt-pills">
+            {{#each dice}}
+            <button type="button" class="nt-chip {{#if active}}active{{/if}}" data-action="rowSet" data-key="die" data-value="{{value}}">{{label}}</button>
+            {{/each}}
+          </span>
+          {{/if}}
+          {{#if isFormula}}
+          <span class="nt-pills nt-wrap">
+            {{#each refs}}
+            <button type="button" class="nt-chip {{#if active}}active{{/if}}" data-action="rowSet" data-key="ref" data-value="{{value}}">{{label}}</button>
+            {{/each}}
+          </span>
+          {{/if}}
+        </div>
+        <div class="nt-sentence-out">{{sentence}}</div>
+      </div>
+      {{/each}}
+      <button type="button" class="nt-add" data-action="addRow"><i class="fa-solid fa-plus"></i> Dodaj zmianę</button>
+    </div>
+
+    <div class="nt-card">
+      <h3>Nadaje stany (opcjonalnie)</h3>
+      <div class="nt-pills nt-wrap">
+        {{#each statuses}}
+        <button type="button" class="nt-chip {{#if active}}active{{/if}}" data-action="toggleStatus" data-value="{{id}}">{{label}}</button>
+        {{/each}}
+      </div>
+    </div>
+    {{else}}
+    <div class="nt-card nt-empty">
+      <p>Ten przedmiot nie ma efektów. To w porządku, np. dla zwykłej mikstury leczenia.</p>
+      <button type="button" class="nt-add" data-action="addEffect"><i class="fa-solid fa-plus"></i> Dodaj efekt</button>
+    </div>
+    {{/if}}
+    {{/if}}
+
+    {{!-- KROK 3: UŻYCIE --}}
+    {{#if step3}}
+    <h2>Użycie i ładunki</h2>
+    {{#if isLoot}}
+    <p class="nt-note">Łup nie ma aktywności w dnd5e. Zmień rodzaj w kroku 1, jeśli przedmiot ma się dać użyć.</p>
+    {{else}}
+    <div class="nt-card">
+      <h3>Co się dzieje po użyciu?</h3>
+      <div class="nt-tiles nt-tiles-5">
+        {{#each usageKinds}}
+        <button type="button" class="nt-tile nt-tile-wide {{#if active}}active{{/if}}" data-action="usageKind" data-value="{{value}}">
+          <strong>{{label}}</strong><span>{{hint}}</span>
+        </button>
+        {{/each}}
+      </div>
+
+      {{#if usageAny}}
+      <div class="nt-grid-3">
+        <label class="nt-field">Czas użycia
+          <select data-field="usage.activation">
+            {{#each activationTypes}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+          </select>
+        </label>
+        {{#if state.uses.enabled}}
+        <label class="nt-field">Koszt w ładunkach
+          <input type="number" min="0" data-field="usage.cost" data-dtype="Number" value="{{state.usage.cost}}">
+        </label>
+        <label class="nt-check-inline"><input type="checkbox" data-field="usage.scaling" {{#if state.usage.scaling}}checked{{/if}}> Więcej ładunków = mocniej</label>
+        {{/if}}
+      </div>
+      {{/if}}
+
+      {{#if usageHeal}}
+      <div class="nt-sentence">
+        <span>Leczy</span>
+        <input type="number" min="0" class="nt-num" data-field="usage.heal.count" data-dtype="Number" value="{{state.usage.heal.count}}" aria-label="Liczba kości">
+        <select data-field="usage.heal.die" data-dtype="Number" aria-label="Kość">
+          {{#each dieOptions}}<option value="{{value}}" {{#if (eq value ../state.usage.heal.die)}}selected{{/if}}>{{label}}</option>{{/each}}
+        </select>
+        <span>+</span>
+        <input type="text" class="nt-short" data-field="usage.heal.bonus" value="{{state.usage.heal.bonus}}" placeholder="np. 2 lub @abilities.wis.mod" aria-label="Premia">
+        <span>punktów wytrzymałości</span>
+      </div>
+      {{/if}}
+
+      {{#if usageSave}}
+      <div class="nt-sentence">
+        <span>Cel rzuca na</span>
+        <select data-field="usage.save.ability" aria-label="Atrybut">
+          {{#each abilities}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+        </select>
+        <span>ST</span>
+        <input type="number" min="1" class="nt-num" data-field="usage.save.dc" data-dtype="Number" value="{{state.usage.save.dc}}" aria-label="ST">
+        <span>; po udanym rzucie</span>
+        <select data-field="usage.save.onSave" aria-label="Po udanym rzucie">
+          <option value="half" {{#if onSaveHalf}}selected{{/if}}>połowa obrażeń</option>
+          <option value="none" {{#unless onSaveHalf}}selected{{/unless}}>bez obrażeń</option>
+        </select>
+      </div>
+      {{/if}}
+
+      {{#if usageHasDamage}}
+      <div class="nt-sentence">
+        <span>Obrażenia</span>
+        <input type="number" min="0" class="nt-num" data-field="usage.damage.count" data-dtype="Number" value="{{state.usage.damage.count}}" aria-label="Liczba kości">
+        <select data-field="usage.damage.die" data-dtype="Number" aria-label="Kość">
+          {{#each dieOptions}}<option value="{{value}}" {{#if (eq value ../state.usage.damage.die)}}selected{{/if}}>{{label}}</option>{{/each}}
+        </select>
+        <span>+</span>
+        <input type="text" class="nt-short" data-field="usage.damage.bonus" value="{{state.usage.damage.bonus}}" placeholder="np. 2" aria-label="Premia">
+        <select data-field="usage.damage.type" aria-label="Rodzaj obrażeń">
+          {{#each usageDamageTypes}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+        </select>
+      </div>
+      {{/if}}
+    </div>
+    {{/if}}
+
+    <div class="nt-card">
+      <label class="nt-check-title"><input type="checkbox" data-field="uses.enabled" {{#if state.uses.enabled}}checked{{/if}}> Ładunki / ograniczone użycia</label>
+      {{#if state.uses.enabled}}
+      <div class="nt-sentence">
+        <input type="number" min="1" class="nt-num" data-field="uses.max" data-dtype="Number" value="{{state.uses.max}}" aria-label="Maks. ładunków">
+        <span>ładunków; odnawia</span>
+        <input type="text" class="nt-short" data-field="uses.formula" value="{{state.uses.formula}}" placeholder="wszystkie lub np. 1d6+1" aria-label="Ile się odnawia">
+        <select data-field="uses.recovery" aria-label="Kiedy">
+          <option value="">nigdy</option>
+          {{#each periods}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+        </select>
+      </div>
+      {{#if isConsumable}}
+      <label class="nt-check-inline"><input type="checkbox" data-field="uses.autoDestroy" {{#if state.uses.autoDestroy}}checked{{/if}}> Znika po zużyciu ostatniego ładunku</label>
+      {{/if}}
+      {{/if}}
+    </div>
+    {{/if}}
+
+    {{!-- KROK 4: PODSUMOWANIE --}}
+    {{#if step4}}
+    <h2>Podsumowanie</h2>
+    <div class="nt-card">
+      <h3>Gdzie utworzyć</h3>
+      <div class="nt-grid-2">
+        <label class="nt-field">Postać
+          <select data-field="destination.actorId">
+            <option value="">— tylko w katalogu przedmiotów —</option>
+            {{#each actors}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}</option>{{/each}}
+          </select>
+        </label>
+        {{#if toWorld}}
+        <label class="nt-field">Folder
+          <select data-field="destination.folder">
+            <option value="">—</option>
+            {{#each folders}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}</option>{{/each}}
+          </select>
+        </label>
+        {{/if}}
+      </div>
+      <label class="nt-check-inline"><input type="checkbox" data-field="destination.openSheet" {{#if state.destination.openSheet}}checked{{/if}}> Otwórz kartę przedmiotu po utworzeniu (pełne opcje systemu)</label>
+    </div>
+    {{/if}}
+  </section>
+
+  {{!-- PODGLĄD --}}
+  <aside class="nt-aside">
+    <div class="nt-aside-head">Jak to przeczyta gracz</div>
+    {{#each summary}}
+    <div class="nt-summary">
+      <div class="nt-summary-title"><strong>{{name}}</strong><span class="nt-badge">{{duration}}</span></div>
+      {{#each lines}}<div class="nt-line">• {{this}}</div>{{/each}}
+      {{#if statuses.length}}<div class="nt-line">• Stany: {{#each statuses}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}</div>{{/if}}
+    </div>
+    {{else}}
+    <p class="nt-hint">Brak efektów.</p>
+    {{/each}}
+    {{#if usageSummary.length}}
+    <div class="nt-summary">
+      <div class="nt-summary-title"><strong>Użycie</strong></div>
+      {{#each usageSummary}}<div class="nt-line">• {{this}}</div>{{/each}}
+    </div>
+    {{/if}}
+    {{#if rows.length}}
+    <details class="nt-tech">
+      <summary>Zaawansowane: zapis w dnd5e</summary>
+      {{#each rows}}{{#each tech}}<code>{{this}}</code>{{/each}}{{/each}}
+    </details>
+    {{/if}}
+    <div class="nt-actions">
+      {{#unless isFirst}}<button type="button" data-action="prev"><i class="fa-solid fa-arrow-left"></i> Wstecz</button>{{/unless}}
+      {{#unless isLast}}<button type="button" data-action="next">Dalej <i class="fa-solid fa-arrow-right"></i></button>{{/unless}}
+      <button type="button" class="nt-primary" data-action="create">
+        <i class="fa-solid fa-wand-magic-sparkles"></i>
+        {{#if selectedActor}}Dodaj do: {{selectedActor}}{{else}}Utwórz przedmiot{{/if}}
+      </button>
+    </div>
+  </aside>
+</div>
