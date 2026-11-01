@@ -1,0 +1,37 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ustaw wersję i adresy w module.json
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          VERSION="${TAG#v}"
+          jq --arg v "$VERSION" \
+             --arg m "https://github.com/$REPO/releases/latest/download/module.json" \
+             --arg d "https://github.com/$REPO/releases/download/$TAG/new-tavern.zip" \
+             '.version = $v | .manifest = $m | .download = $d' module.json > module.tmp
+          mv module.tmp module.json
+          cat module.json
+
+      - name: Zbuduj archiwum
+        run: zip -r new-tavern.zip module.json scripts styles templates lang README.md
+
+      - name: Dołącz pliki do wydania
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            module.json
+            new-tavern.zip
