@@ -3,6 +3,11 @@ name: Release
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag wydania, np. v0.4.0"
+        required: true
 
 permissions:
   contents: write
@@ -10,13 +15,13 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
+      REPO: ${{ github.repository }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Ustaw wersję i adresy w module.json
-        env:
-          TAG: ${{ github.event.release.tag_name }}
-          REPO: ${{ github.repository }}
         run: |
           VERSION="${TAG#v}"
           jq --arg v "$VERSION" \
@@ -29,9 +34,13 @@ jobs:
       - name: Zbuduj archiwum
         run: zip -r new-tavern.zip module.json scripts styles templates lang README.md
 
-      - name: Dołącz pliki do wydania
+      - name: Utwórz wydanie lub dołącz do niego pliki
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ env.TAG }}
+          name: ${{ env.TAG }}
+          target_commitish: ${{ github.sha }}
+          make_latest: true
           files: |
             module.json
             new-tavern.zip
