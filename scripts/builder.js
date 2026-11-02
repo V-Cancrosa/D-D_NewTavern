@@ -1,6 +1,10 @@
 import { toSystemDice } from "./labels.js";
 import { getFormulaRefs, OPERATIONS, getSetOptions, getTarget, allowedKinds } from "./catalog.js";
 
+/** Zbroje i tarcze – podtypy wyposażenia, które liczą się do KP. */
+export const ARMOR_SUBTYPES = ["light", "medium", "heavy", "natural", "shield"];
+export const isArmorItem = i => (i.type === "equipment") && ARMOR_SUBTYPES.includes(i.subtype);
+
 export const isV14 = () => (game.release?.generation ?? 13) >= 14;
 
 /** Jednostki czasu trwania: klucz Foundry 14 → liczba sekund (dla Foundry 13). */
@@ -198,7 +202,11 @@ export function buildItemData(state, { forActor = false } = {}) {
     if ( i.equipped ) system.equipped = true;
     if ( i.equipped && i.attunement === "required" ) system.attuned = true;
   }
-  if ( Number(i.magicalBonus) ) {
+  if ( isArmorItem(i) ) {
+    system.armor = { value: Number(i.armor?.value) || 0, dex: i.armor?.dex === "" || i.armor?.dex === null
+      ? null : Number(i.armor?.dex), magicalBonus: Number(i.magicalBonus) || null };
+    if ( Number(i.armor?.strength) ) system.strength = Number(i.armor.strength);
+  } else if ( Number(i.magicalBonus) ) {
     if ( i.type === "equipment" ) system.armor = { magicalBonus: Number(i.magicalBonus) };
     else system.magicalBonus = Number(i.magicalBonus);
   }
@@ -214,11 +222,16 @@ export function buildItemData(state, { forActor = false } = {}) {
   }
   const activity = i.type === "loot" ? null : buildActivity(state, timedIds);
   if ( activity ) system.activities = { [activity._id]: activity };
+  // Broń zawsze ma atak. dnd5e dodaje go sam tylko wtedy, gdy przedmiot nie ma żadnej aktywności.
+  if ( (i.type === "weapon") && activity && (activity.type !== "attack") ) {
+    const attackId = foundry.utils.randomID();
+    system.activities[attackId] = { _id: attackId, type: "attack", activation: { type: "action" }, sort: -1 };
+  }
 
   return {
     name: i.name?.trim() || "Nowy przedmiot",
     type: i.type,
-    img: i.img || "icons/svg/item-bag.svg",
+    img: i.img || globalThis.Item?.implementation?.getDefaultArtwork?.({ type: i.type })?.img || "icons/svg/item-bag.svg",
     system,
     effects
   };
@@ -260,6 +273,11 @@ export async function saveItem(item, state) {
     if ( i.equipped && (i.attunement === "required") ) update["system.attuned"] = true;
   }
   if ( item.type === "equipment" ) update["system.armor.magicalBonus"] = Number(i.magicalBonus) || null;
+  if ( isArmorItem(i) ) {
+    update["system.armor.value"] = Number(i.armor?.value) || 0;
+    update["system.armor.dex"] = (i.armor?.dex === "" || i.armor?.dex === null) ? null : Number(i.armor?.dex);
+    update["system.strength"] = Number(i.armor?.strength) || null;
+  }
   else if ( "magicalBonus" in item.system ) update["system.magicalBonus"] = Number(i.magicalBonus) || null;
   if ( sys.damage ) {
     update["system.damage.base.number"] = sys.damage.base.number;

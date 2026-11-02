@@ -1,7 +1,7 @@
 import { getFormulaRefs, OPERATIONS, VALUE_KINDS, getAbilities, allowedKinds, getSetOptions, getTarget, getTargets,
   getItemTypes }
   from "./catalog.js";
-import { DURATION_UNITS, EXPIRY, buildItemData, describeDuration, describeRow, isV14, saveItem } from "./builder.js";
+import { DURATION_UNITS, EXPIRY, isArmorItem, buildItemData, describeDuration, describeRow, isV14, saveItem } from "./builder.js";
 import { readItem } from "./reader.js";
 import { PRESETS } from "./presets.js";
 import { loadIndex, medianPrice, searchIndex, worldRules } from "./sources.js";
@@ -66,7 +66,8 @@ function defaultState(actor) {
     intents: { passive: false, use: false, charges: false, timed: false },
     item: { name: "", img: "", type: "equipment", subtype: "", rarity: "", attunement: "", magical: false,
       equipped: true, quantity: 1, description: "", magicalBonus: 0, damage: { count: 1, die: 8, type: "slashing" },
-      rules: worldRules(), price: 0, priceDenomination: "gp", mastery: "" },
+      rules: worldRules(), price: 0, priceDenomination: "gp", mastery: "",
+      armor: { value: 0, dex: "", strength: 0 } },
     effects: [],
     usage: { kind: "none", activation: "action", cost: 1, scaling: false,
       heal: { count: 2, die: 4, bonus: "" }, damage: { count: 1, die: 6, bonus: "", type: "fire" },
@@ -282,7 +283,18 @@ export default class NewTavernWizard extends HandlebarsApplicationMixin(Applicat
     ctx.weaponDice = ctx.dieOptions(s.item.damage.die);
     ctx.weaponDamageTypes = plOptions("damage", D.damageTypes, s.item.damage.type);
     ctx.isWeapon = s.item.type === "weapon";
-    ctx.isArmor = s.item.type === "equipment" && ["light", "medium", "heavy", "shield", "natural"].includes(s.item.subtype);
+    ctx.isArmor = isArmorItem(s.item);
+    ctx.isShield = s.item.subtype === "shield";
+    if ( ctx.isArmor ) {
+      const a = s.item.armor;
+      const value = Number(a.value) || 0;
+      const bonus = Number(s.item.magicalBonus) || 0;
+      const cap = (a.dex === "" || a.dex === null) ? null : Number(a.dex);
+      ctx.armorMissing = !value;
+      ctx.armorPreview = ctx.isShield
+        ? `Tarcza: +${value + bonus} do KP.`
+        : `KP w tej zbroi: ${value + bonus} + mod. ZRC${cap === null ? "" : cap === 0 ? " (bez ZRC)" : ` (maks. +${cap})`}. Bez zbroi postać ma 10 + mod. ZRC.`;
+    }
     ctx.hasMagicalBonus = ctx.isWeapon || ctx.isArmor;
 
     // 3. Zamiary
@@ -322,6 +334,7 @@ export default class NewTavernWizard extends HandlebarsApplicationMixin(Applicat
     ctx.usageKinds = USAGE_KINDS.filter(k => s.intents.use || k.value === "utility")
       .map(k => ({ ...k, icon: activityIcon(k.value), active: k.value === u.kind }));
     ctx.onlyUtility = !s.intents.use;
+    ctx.isWeaponUsage = s.item.type === "weapon";
     ctx.u = { heal: u.kind === "heal", damage: u.kind === "damage" || u.kind === "save", save: u.kind === "save",
       utility: u.kind === "utility" };
     ctx.healDice = ctx.dieOptions(u.heal.die);
@@ -699,6 +712,11 @@ export default class NewTavernWizard extends HandlebarsApplicationMixin(Applicat
   static async #onCreate() {
     if ( !game.user.isGM ) return ui.notifications.warn("Tylko MG może tworzyć i edytować przedmioty.");
     const s = this.effectiveState();
+    if ( isArmorItem(s.item) && !Number(s.item.armor?.value) ) {
+      this.nt.step = "basics";
+      this.render();
+      return ui.notifications.warn("Podaj KP zbroi lub tarczy – bez tego system liczy KP od zera.");
+    }
     if ( !s.item.name?.trim() ) {
       this.nt.step = this.editing ? "overview" : "start";
       this.render();
