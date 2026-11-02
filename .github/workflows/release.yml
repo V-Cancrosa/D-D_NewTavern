@@ -32,7 +32,7 @@ jobs:
           cat module.json
 
       - name: Zbuduj archiwum
-        run: zip -r new-tavern.zip module.json scripts styles templates lang README.md
+        run: zip -r new-tavern.zip module.json scripts styles templates lang fonts README.md
 
       - name: Utwórz wydanie lub dołącz do niego pliki
         uses: softprops/action-gh-release@v2
