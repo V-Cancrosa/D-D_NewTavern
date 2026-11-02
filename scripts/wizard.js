@@ -5,6 +5,8 @@ import { DURATION_UNITS, EXPIRY, isArmorItem, buildItemData, describeDuration, d
 import { readItem } from "./reader.js";
 import { PRESETS } from "./presets.js";
 import { loadIndex, medianPrice, searchIndex, worldRules } from "./sources.js";
+import { getBaseItemOptions, loadBaseItem } from "./baseitems.js";
+import { computeImpact } from "./impact.js";
 import { PL, pl, plOptions } from "./labels.js";
 
 const MODULE_ID = "new-tavern";
@@ -67,7 +69,8 @@ function defaultState(actor) {
     item: { name: "", img: "", type: "equipment", subtype: "", rarity: "", attunement: "", magical: false,
       equipped: true, quantity: 1, description: "", magicalBonus: 0, damage: { count: 1, die: 8, type: "slashing" },
       rules: worldRules(), price: 0, priceDenomination: "gp", mastery: "",
-      armor: { value: 0, dex: "", strength: 0 } },
+      armor: { value: 0, dex: "", strength: 0 }, baseItem: "", properties: [], proficient: null, weight: 0,
+      range: { value: null, long: null, reach: 5, units: "ft" }, versatile: { count: 0, die: 0 } },
     effects: [],
     usage: { kind: "none", activation: "action", cost: 1, scaling: false,
       heal: { count: 2, die: 4, bonus: "" }, damage: { count: 1, die: 6, bonus: "", type: "fire" },
@@ -75,6 +78,7 @@ function defaultState(actor) {
     uses: { enabled: false, max: 1, recovery: "", formula: "", autoDestroy: false },
     destination: { actorId: actor?.id ?? "", folder: "", openSheet: false },
     preset: null,
+    ui: {},
     source: null,
     search: ""
   };
@@ -135,6 +139,7 @@ export default class NewTavernWizard extends HandlebarsApplicationMixin(Applicat
       preset: NewTavernWizard.#onPreset,
       fromCompendium: NewTavernWizard.#onFromCompendium,
       applyPrice: NewTavernWizard.#onApplyPrice,
+      toggleProp: NewTavernWizard.#onToggleProp,
       itemType: NewTavernWizard.#onItemType,
       intent: NewTavernWizard.#onIntent,
       pickImage: NewTavernWizard.#onPickImage,
@@ -283,6 +288,21 @@ export default class NewTavernWizard extends HandlebarsApplicationMixin(Applicat
     ctx.weaponDice = ctx.dieOptions(s.item.damage.die);
     ctx.weaponDamageTypes = plOptions("damage", D.damageTypes, s.item.damage.type);
     ctx.isWeapon = s.item.type === "weapon";
+    // Przedmiot bazowy i „Więcej opcji”
+    ctx.baseItems = ["weapon", "equipment"].includes(s.item.type)
+      ? (await getBaseItemOptions(s.item.type, s.item.subtype)).map(o => ({ ...o, selected: o.value === s.item.baseItem }))
+      : [];
+    const valid = D.validProperties?.[s.item.type];
+    ctx.propertyOptions = [...(valid ?? [])].filter(k => k !== "mgc")
+      .map(k => ({ value: k, label: pl("properties", k, D.itemProperties?.[k]), active: s.item.properties.includes(k) }));
+    ctx.proficiencyOptions = [{ value: "", label: "automatycznie (wg postaci)" }, { value: "1", label: "biegły" },
+      { value: "0", label: "bez biegłości" }].map(o => ({ ...o,
+      selected: o.value === ((s.item.proficient === null || s.item.proficient === undefined) ? "" : String(s.item.proficient)) }));
+    ctx.isVersatile = ctx.isWeapon && s.item.properties.includes("ver");
+    ctx.versatileDice = DICE.map(x => ({ value: x, label: `k${x}`, selected: x === Number(s.item.versatile?.die) }));
+    ctx.isRanged = ctx.isWeapon && (/R$/.test(s.item.subtype) || s.item.properties.includes("thr")
+      || s.item.properties.includes("amm"));
+    ctx.hasMore = ctx.isWeapon || ["equipment", "tool", "consumable", "loot"].includes(s.item.type);
     ctx.isArmor = isArmorItem(s.item);
     ctx.isShield = s.item.subtype === "shield";
     if ( ctx.isArmor ) {
@@ -366,7 +386,25 @@ export default class NewTavernWizard extends HandlebarsApplicationMixin(Applicat
     ctx.selectedActor = game.actors.get(s.destination.actorId)?.name ?? "";
     ctx.ownerName = this.item?.parent?.name ?? "";
     ctx.overview = this.#overview();
+    if ( ["basics", "done", "overview"].includes(s.step) ) ctx.impact = this.#impact();
     return ctx;
+  }
+
+  /** Postać, dla której liczymy wpływ (wybrana albo właściciel edytowanego przedmiotu). */
+  get impactActor() {
+    const parent = this.item?.parent;
+    if ( parent?.documentName === "Actor" ) return parent;
+    return game.actors.get(this.nt.destination.actorId) ?? null;
+  }
+
+  #impact() {
+    const actor = this.impactActor;
+    if ( !actor ) return null;
+    const data = buildItemData(this.effectiveState(), { forActor: true });
+    const replaceId = this.item?.parent?.documentName === "Actor" ? this.item.id : null;
+    const result = computeImpact(actor, data, { replaceId });
+    return result ? { ...result, actorName: actor.name,
+      empty: !result.rows.length && !result.notes.length && !result.warnings.length } : null;
   }
 
   /** Indeks kompendiów (wczytywany raz, przy pierwszym renderze). */
@@ -464,6 +502,13 @@ export default class NewTavernWizard extends HandlebarsApplicationMixin(Applicat
   async _onFirstRender(context, options) {
     await super._onFirstRender?.(context, options);
     this.element.addEventListener("change", this.#onChangeField.bind(this));
+    // Zapamiętuje rozwinięte sekcje <details data-ui="…">, bo okno przerysowuje się po zmianach.
+    this.element.addEventListener("toggle", event => {
+      const key = event.target?.dataset?.ui;
+      if ( !key ) return;
+      this.nt.ui ??= {};
+      this.nt.ui[key] = event.target.open;
+    }, true);
   }
 
   #onChangeField(event) {
@@ -493,6 +538,13 @@ export default class NewTavernWizard extends HandlebarsApplicationMixin(Applicat
     }
     if ( path === "item.type" ) this.nt.item.subtype = "";
     if ( path === "search" ) return this.render();
+    if ( path === "item.subtype" ) this.nt.item.baseItem = "";
+    if ( (path === "item.baseItem") && value ) {
+      return loadBaseItem(this.nt.item.type, value).then(patch => {
+        if ( patch ) foundry.utils.mergeObject(this.nt.item, patch);
+        this.render();
+      });
+    }
     if ( (el.tagName === "TEXTAREA") || (el.type === "text") ) {
       if ( path === "item.name" ) this.element.querySelectorAll(".nt-name").forEach(n => n.textContent = value);
       return;
@@ -580,6 +632,13 @@ export default class NewTavernWizard extends HandlebarsApplicationMixin(Applicat
       source: { uuid, name: doc.name } });
     deriveIntents(s);
     this.nt = s;
+    this.render();
+  }
+
+  static #onToggleProp(event, target) {
+    const v = target.dataset.value;
+    const props = this.nt.item.properties;
+    this.nt.item.properties = props.includes(v) ? props.filter(p => p !== v) : [...props, v];
     this.render();
   }
 

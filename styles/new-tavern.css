@@ -150,3 +150,12 @@
 .nt-wizard .nt-thumb { width: 32px; height: 32px; flex: 0 0 32px; border: 1px solid #4a4d58; border-radius: 3px; object-fit: cover; }
 .nt-wizard .nt-wide-num { width: 80px !important; flex-basis: 80px; }
 .nt-wizard .nt-warn { color: #e0b070; }
+
+/* Wpływ na postać */
+.nt-wizard .nt-impact { gap: 4px; }
+.nt-wizard .nt-flush { padding: 0 0 4px; }
+.nt-wizard .nt-irow { display: grid; grid-template-columns: minmax(0, 1fr) auto 14px auto; gap: 6px; align-items: center; font-size: 13px; }
+.nt-wizard .nt-up { color: #7fd18b; font-weight: bold; }
+.nt-wizard .nt-dn { color: #e48a8a; font-weight: bold; }
+.nt-wizard .nt-same { color: #d8d4ca; }
+.nt-wizard .nt-small { font-size: 11px; }

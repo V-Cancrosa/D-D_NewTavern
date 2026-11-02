@@ -20,6 +20,12 @@ Kreator prowadzi krok po kroku, w oknie w stylu systemowego „Create Item”. W
 6. **Ładunki**: liczba, odnawianie (np. 1k6+1 o świcie), znikanie po zużyciu, szybkie ustawienia.
 7. **Gotowe**: podgląd w stylu dymka przedmiotu, wybór postaci albo katalogu przedmiotów.
 
+## Więcej opcji i wpływ na postać
+
+- **Przedmiot bazowy** (np. długi miecz, zbroja łuskowa) z list systemu uzupełnia obrażenia, wersję oburęczną, właściwości, zasięg, wagę, cenę, a dla zbroi KP, limit ZRC i utrudnienie do Skradania.
+- **Więcej opcji** w kroku „Podstawy”: właściwości (po polsku), biegłość, zasięg (wręcz albo normalny/daleki), waga. Broń wszechstronna ma pole obrażeń oburęcznych.
+- **Wpływ na postać**: gdy przedmiot jest dla konkretnej postaci (albo edytujesz przedmiot z jej karty), kreator pokazuje zmiany przed → po (KP, rzuty obronne, umiejętności, szybkość, inicjatywa…), trafienie i obrażenia broni oraz ostrzeżenia (brak biegłości, wymagana Siła). Liczy to dnd5e na tymczasowej kopii postaci w pamięci – nic nie jest zapisywane.
+
 ## Zasady 2014 i 2024
 
 - Kreator czyta wybór zasad świata (ustawienie dnd5e „Rules Version”) i oznacza tworzone przedmioty właściwym źródłem zasad. W kroku „Podstawy” można to zmienić dla pojedynczego przedmiotu; gdy różni się od świata, kreator pokazuje ostrzeżenie i niczego nie przerabia sam.
