@@ -4,6 +4,8 @@
  * oraz jak przełożyć je na klucze dnd5e 5.x (Foundry 13) i 6.x (Foundry 14).
  */
 
+import { PL, pl } from "./labels.js";
+
 export const ABILITIES = ["str", "dex", "con", "int", "wis", "cha"];
 const ABILITY_PL = { str: "Siła", dex: "Zręczność", con: "Kondycja", int: "Inteligencja", wis: "Mądrość", cha: "Charyzma" };
 const ABILITY_GEN = { str: "SIŁ", dex: "ZRC", con: "KON", int: "INT", wis: "MDR", cha: "CHA" };
@@ -107,7 +109,7 @@ export function getTargets() {
       minimum: skillKeys().map(s => `system.skills.${s}.roll.min`)
     } }));
   for ( const [s, cfg] of Object.entries(CONFIG.DND5E?.skills ?? {}) ) push("Umiejętności", roll({
-    id: `skill-${s}`, label: label(cfg), short: `testów: ${label(cfg)}`,
+    id: `skill-${s}`, label: PL.skills[s] ?? label(cfg), short: `testów: ${PL.skills[s] ?? label(cfg)}`,
     keys: {
       bonus: [v6 ? `system.skills.${s}.roll.bonus` : `system.skills.${s}.bonuses.check`],
       advantage: [`system.skills.${s}.roll.mode`],
@@ -172,10 +174,10 @@ export function getTargets() {
 /** Opcje dla celów typu „set” (rodzaje obrażeń, stany). */
 export function getSetOptions(kind) {
   if ( kind === "damage" ) return Object.entries(CONFIG.DND5E?.damageTypes ?? {})
-    .map(([value, cfg]) => ({ value, label: label(cfg) }));
+    .map(([value, cfg]) => ({ value, label: pl("damage", value, cfg) }));
   return Object.entries(CONFIG.DND5E?.conditionTypes ?? {})
     .filter(([, cfg]) => !cfg.pseudo)
-    .map(([value, cfg]) => ({ value, label: label(cfg) }));
+    .map(([value, cfg]) => ({ value, label: pl("conditions", value, cfg) }));
 }
 
 export function getTarget(id) {

@@ -9,19 +9,26 @@ Kreator otwierasz na trzy sposoby (tylko MG):
 - ikoną różdżki w nagłówku karty postaci,
 - z menu kontekstowego postaci w katalogu aktorów (albo w **Game Settings → Module Settings**).
 
-Cztery kroki, które można przeskakiwać:
-1. **Przedmiot**: gotowy szablon albo nazwa, rodzaj, podtyp, rzadkość, dostrojenie, premia magiczna i obrażenia broni.
-2. **Efekty**: stały (gdy przedmiot jest założony) albo czasowy (rundy, tury, minuty, godziny, dni; na Foundry 14 także koniec tury i odpoczynki). Każda zmiana to cel z listy (KP, rzuty obronne, umiejętności, ataki, atrybuty, szybkość, zmysły, odporności), działanie (Dodaj, Premia, Pomnóż, Ustaw na, Co najmniej, Co najwyżej, Przewaga, Utrudnienie, Minimum na k20) i wartość: liczba, kości (np. 1k4) albo cecha postaci (biegłość, modyfikator, poziom). Kreator pokazuje tylko kombinacje, które system obsługuje. Efekt może też nadawać stany.
-3. **Użycie i ładunki**: brak, nałożenie efektu, leczenie, obrażenia albo rzut obronny; ładunki z odnawianiem i znikanie po zużyciu.
-4. **Podsumowanie**: postać albo katalog przedmiotów (folder) i opcjonalne otwarcie karty przedmiotu.
+Kreator prowadzi krok po kroku, w oknie w stylu systemowego „Create Item”. Wszystkie etykiety są po polsku, a kości wpisuje się jak na sesji (1k6+1).
+1. **Co tworzysz?**: nazwa, folder i rodzaj przedmiotu z ikonami systemu albo gotowy szablon.
+2. **Podstawy**: podtyp, rzadkość, dostrojenie, ilość, „magiczny”; dla broni kości obrażeń, dla broni i zbroi premia magiczna.
+3. **Co robi ten przedmiot?**: daje premie, gdy jest noszony / można go użyć / ma ładunki / po użyciu działa przez jakiś czas. Kreator pokazuje potem tylko potrzebne kroki.
+4. **Premie i efekty**: tabela zmian jak w zakładce „Changes” systemu. Wiersz rozwija się w miejscu: cel (KP, rzuty obronne, umiejętności, ataki, atrybuty, szybkość, zmysły, odporności), działanie (Dodaj, Premia, Pomnóż, Ustaw na, Co najmniej, Co najwyżej, Przewaga, Utrudnienie, Minimum na k20) i wartość: liczba, kości albo cecha postaci. Efekt może być stały albo czasowy i nadawać stany.
+5. **Użycie**: leczenie, obrażenia, rzut obronny albo samo nałożenie efektu; koszt w ładunkach i czas użycia.
+6. **Ładunki**: liczba, odnawianie (np. 1k6+1 o świcie), znikanie po zużyciu, szybkie ustawienia.
+7. **Gotowe**: podgląd w stylu dymka przedmiotu, wybór postaci albo katalogu przedmiotów.
+
+## Polskie znaki w nagłówkach
+
+Czcionka nagłówków Foundry i dnd5e (Modesto Condensed) nie ma polskich liter. Moduł uzupełnia ją literami z czcionki Grenze (licencja SIL OFL, plik w `fonts/grenze`). Pozostałe litery zostają oryginalne. Działa w całym świecie i można to wyłączyć w ustawieniach modułu.
 
 ## Edycja istniejących przedmiotów
 
-Na karcie postaci kliknij **⋮** przy przedmiocie i wybierz **Edit**: otworzy się ten sam edytor, wypełniony danymi przedmiotu. Oryginalna karta przedmiotu jest pod pozycją **Karta systemu**. Edytor otworzysz też ikoną różdżki w nagłówku karty przedmiotu albo z menu kontekstowego w katalogu przedmiotów. Zamianę „Edit” można wyłączyć w ustawieniach modułu.
+Na karcie postaci kliknij **⋮** przy przedmiocie i wybierz **Edit**: otworzy się edytor z przeglądem przedmiotu; kliknięcie sekcji przenosi do jej kroku. Oryginalna karta przedmiotu jest pod pozycją **Karta systemu**. Edytor otworzysz też ikoną różdżki w nagłówku karty przedmiotu albo z menu kontekstowego w katalogu przedmiotów. Zamianę „Edit” można wyłączyć w ustawieniach modułu.
 
 Edytor zmienia tylko to, co pokazuje. Zmiany efektów, których nie rozpoznaje, zostają zachowane i oznaczone jako „Własna zmiana”. Inne aktywności, sformatowany opis (jeśli go nie zmienisz) i pozostałe pola systemu zostają bez zmian. Edycja obejmuje broń, wyposażenie, materiały eksploatacyjne, narzędzia, łup i cechy.
 
-Panel po prawej pokazuje opis efektów tak, jak przeczyta go gracz. Sekcja „Zaawansowane” pokazuje zapis w dnd5e. Kreator zapisuje efekty w formacie właściwym dla wersji: na Foundry 14 / dnd5e 6 `system.changes` z nowymi kluczami (`system.rolls.*`, `movement.speeds.*`, `senses.ranges.*`), na Foundry 13 / dnd5e 5 w dotychczasowym formacie.
+Kreator zapisuje efekty w formacie właściwym dla wersji: na Foundry 14 / dnd5e 6 `system.changes` z nowymi kluczami (`system.rolls.*`, `movement.speeds.*`, `senses.ranges.*`), na Foundry 13 / dnd5e 5 w dotychczasowym formacie.
 
 D&D5e 6.x wymaga Foundry VTT 14.
 

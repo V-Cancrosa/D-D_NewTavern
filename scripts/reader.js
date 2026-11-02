@@ -1,5 +1,6 @@
 import { FORMULA_REFS, OPERATIONS, getTargets } from "./catalog.js";
 import { isV14 } from "./builder.js";
+import { toPolishDice } from "./labels.js";
 
 /** Rodzaje aktywności, które kreator potrafi edytować. */
 export const MANAGED_ACTIVITY_TYPES = ["utility", "heal", "damage", "save"];
@@ -118,7 +119,7 @@ export function readItem(item, base) {
   if ( uses?.max ) {
     const rec = uses.recovery?.[0];
     Object.assign(s.uses, { enabled: true, max: Number(uses.max) || uses.max, recovery: rec?.period ?? "",
-      formula: rec?.type === "formula" ? (rec.formula ?? "") : "", autoDestroy: !!uses.autoDestroy });
+      formula: rec?.type === "formula" ? toPolishDice(rec.formula ?? "") : "", autoDestroy: !!uses.autoDestroy });
   }
 
   // Efekty (tylko zwykłe, bez zaklęć „enchantment”)
@@ -145,11 +146,11 @@ export function readItem(item, base) {
     u.cost = Number(target?.value) || 1;
     u.scaling = !!activity.consumption?.scaling?.allowed;
     if ( activity.type === "heal" ) Object.assign(u.heal, {
-      count: activity.healing?.number ?? 0, die: activity.healing?.denomination ?? 4, bonus: activity.healing?.bonus ?? ""
+      count: activity.healing?.number ?? 0, die: activity.healing?.denomination ?? 4, bonus: toPolishDice(activity.healing?.bonus ?? "")
     });
     const part = activity.damage?.parts?.[0];
     if ( part ) Object.assign(u.damage, {
-      count: part.number ?? 0, die: part.denomination ?? 6, bonus: part.bonus ?? "",
+      count: part.number ?? 0, die: part.denomination ?? 6, bonus: toPolishDice(part.bonus ?? ""),
       type: [...(part.types ?? [])][0] ?? u.damage.type
     });
     if ( activity.type === "save" ) Object.assign(u.save, {

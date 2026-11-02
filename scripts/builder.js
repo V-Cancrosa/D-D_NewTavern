@@ -1,3 +1,4 @@
+import { toSystemDice } from "./labels.js";
 import { FORMULA_REFS, OPERATIONS, getSetOptions, getTarget, allowedKinds } from "./catalog.js";
 
 export const isV14 = () => (game.release?.generation ?? 13) >= 14;
@@ -162,7 +163,7 @@ export function buildActivity(state, timedIds) {
     target: { affects: { type: "creature", count: "1" } }
   };
   const dice = (d, types) => ({
-    number: Number(d.count) || 0, denomination: Number(d.die) || 0, bonus: d.bonus ?? "", types, scaling
+    number: Number(d.count) || 0, denomination: Number(d.die) || 0, bonus: toSystemDice(d.bonus ?? ""), types, scaling
   });
   if ( kind === "heal" ) {
     activity.healing = dice(u.heal, ["healing"]);
@@ -205,7 +206,7 @@ export function buildItemData(state, { forActor = false } = {}) {
   if ( state.uses.enabled ) {
     const u = state.uses;
     system.uses = { max: String(u.max || 1), spent: 0, recovery: u.recovery
-      ? [{ period: u.recovery, type: u.formula ? "formula" : "recoverAll", formula: u.formula || "" }] : [] };
+      ? [{ period: u.recovery, type: u.formula ? "formula" : "recoverAll", formula: toSystemDice(u.formula || "") }] : [] };
     if ( i.type === "consumable" ) system.uses.autoDestroy = Boolean(u.autoDestroy);
   }
   const activity = i.type === "loot" ? null : buildActivity(state, timedIds);
