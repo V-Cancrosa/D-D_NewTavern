@@ -9,6 +9,24 @@ function reportOpenError(err) {
   ui.notifications.error(`New Tavern: nie udało się otworzyć kreatora: ${err?.message ?? err}`, { permanent: true });
 }
 
+/** Zakres polskich liter (ą ć ę ł ń ó ś ź ż i wielkie). */
+const POLISH_RANGE = "U+0104-0107, U+0118-0119, U+0141-0144, U+00D3, U+00F3, U+015A-015B, U+0179-017C";
+
+/**
+ * Dopisuje do czcionki „Modesto Condensed” polskie litery z Grenze. Przeglądarka bierze z tego pliku
+ * tylko znaki z `unicode-range`, więc pozostałe litery zostają oryginalne – w całym Foundry i dnd5e.
+ */
+function injectPolishGlyphs() {
+  if ( document.getElementById("new-tavern-polish-glyphs") ) return;
+  const base = `modules/${MODULE_ID}/fonts/grenze`;
+  const face = (weight, file) => `@font-face { font-family: "Modesto Condensed"; font-weight: ${weight};
+    font-style: normal; font-display: swap; unicode-range: ${POLISH_RANGE}; src: url("${base}/${file}") format("woff2"); }`;
+  const style = document.createElement("style");
+  style.id = "new-tavern-polish-glyphs";
+  style.textContent = [face(400, "grenze-pl-500.woff2"), face(700, "grenze-pl-700.woff2")].join("\n");
+  document.head.append(style);
+}
+
 const EDITABLE_TYPES = new Set(["weapon", "equipment", "consumable", "tool", "loot", "feat"]);
 
 /** Otwiera kreator (tylko MG). */
@@ -45,6 +63,12 @@ Hooks.once("init", () => {
     icon: ICON,
     type: NewTavernWizard, restricted: true
   });
+  game.settings.register(MODULE_ID, "polishGlyphs", {
+    name: "Polskie znaki w nagłówkach (Grenze)",
+    hint: "Uzupełnia czcionkę nagłówków Foundry i dnd5e (Modesto Condensed) o polskie litery z czcionki Grenze. Działa w całym świecie, dla wszystkich graczy. Zmiana wymaga odświeżenia (F5).",
+    scope: "world", config: true, type: Boolean, default: true, requiresReload: true
+  });
+  if ( game.settings.get(MODULE_ID, "polishGlyphs") ) injectPolishGlyphs();
   game.settings.register(MODULE_ID, "replaceEdit", {
     name: "„Edit” otwiera edytor New Tavern",
     hint: "Dla MG: pozycja „Edit” w menu przedmiotu na karcie postaci otwiera edytor New Tavern. Oryginalna karta przedmiotu jest pod pozycją „Karta systemu”.",
