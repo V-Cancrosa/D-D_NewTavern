@@ -1,34 +1,5 @@
 {
-  "GMEI": {
-    "Form": {
-      "Title": "New Tavern · kreator przedmiotu",
-      "Untitled": "Nowy przedmiot"
-    },
-    "SheetButton": "New Tavern: nowy przedmiot dla tej postaci",
-    "DirectoryAction": "New Tavern: nowy przedmiot",
-    "Settings": {
-      "MenuName": "Kreator przedmiotów",
-      "MenuLabel": "Otwórz kreator",
-      "MenuHint": "Jako MG utwórz przedmiot z efektami, czasem trwania, aktywnością i ładunkami – bez znajomości kluczy dnd5e.",
-      "ReplaceEditName": "„Edit” otwiera edytor New Tavern",
-      "ReplaceEditHint": "Dla MG: pozycja „Edit” w menu przedmiotu na karcie postaci otwiera edytor New Tavern. Oryginalna karta przedmiotu jest dostępna pod pozycją „Karta systemu”."
-    },
-    "Errors": {
-      "GmOnly": "Tylko MG może tworzyć przedmioty z efektami.",
-      "NoActor": "Wybierz kartę postaci, do której ma zostać dodany przedmiot.",
-      "UnsupportedCore": "New Tavern wspiera Foundry VTT 13 i 14.",
-      "UnsupportedSystem": "New Tavern wymaga D&D5e 5.2.5 lub nowszego.",
-      "Dnd6NeedsV14": "D&D5e 6.x wymaga Foundry VTT 14; na Foundry 13 użyj D&D5e 5.x.",
-      "CreateFailed": "Nie udało się utworzyć przedmiotu: {error}",
-      "OpenFailed": "Nie udało się otworzyć kreatora: {error}"
-    },
-    "Notifications": {
-      "Added": "Dodano „{item}” do karty: {actor}.",
-      "Created": "Utworzono „{item}” w katalogu przedmiotów.",
-      "Saved": "Zapisano zmiany w „{item}”."
-    },
-    "DirectoryButton": "New Tavern",
-    "EditInWizard": "Edytuj w New Tavern",
-    "EditNative": "Karta systemu"
+  "TAVERNS": {
+    "Title": "…and Taverns, Oh My!"
   }
 }

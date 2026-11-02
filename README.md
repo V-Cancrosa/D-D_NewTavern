@@ -1,11 +1,13 @@
-# New Tavern
+# …and Taverns, Oh My!
 
-Moduł dla Foundry VTT 13–14 i D&D5e 5.2.5–6.0.6. Kreator przedmiotów dla MG: efekty opisane po polsku zamiast kluczy systemowych.
+*Dungeons and Dragons… and Taverns, Oh My!* – nazwa dopełnia cytat z „Czarnoksiężnika z Krainy Oz” razem z nazwą systemu. Identyfikator modułu to nadal `new-tavern`, więc dotychczasowe instalacje aktualizują się normalnie.
+
+Moduł dla Foundry VTT 13–14 i D&D5e 5.2.5–6.0.6. Zestaw narzędzi dla MG. Pierwsza funkcja: kreator i edytor przedmiotów z efektami opisanymi po polsku zamiast kluczy systemowych.
 
 ## Kreator przedmiotów
 
 Kreator otwierasz na trzy sposoby (tylko MG):
-- przyciskiem **New Tavern** obok „Create Item” w katalogu przedmiotów,
+- przyciskiem **Taverns, Oh My!** obok „Create Item” w katalogu przedmiotów,
 - ikoną różdżki w nagłówku karty postaci,
 - z menu kontekstowego postaci w katalogu aktorów (albo w **Game Settings → Module Settings**).
 
@@ -40,10 +42,30 @@ W Foundry VTT lub na The Forge wybierz **Install Module** i wklej adres manifest
 https://github.com/V-Cancrosa/D-D_NewTavern/releases/latest/download/module.json
 ```
 
-Następnie uruchom świat i aktywuj New Tavern w **Manage Modules**.
+Następnie uruchom świat i aktywuj „…and Taverns, Oh My!” w **Manage Modules**.
 
 ## Wydawanie nowej wersji
 
 1. Podnieś `version` w `module.json` i scal zmiany do `main`.
 2. Na GitHubie utwórz wydanie (**Releases → Draft a new release**) z tagiem `vX.Y.Z`, np. `v0.3.0`, albo uruchom workflow **Release** ręcznie (**Actions → Release → Run workflow**) z tym tagiem.
 3. Workflow `.github/workflows/release.yml` dołączy do wydania `module.json` i `new-tavern.zip`; od tej chwili Manifest URL wskazuje nową wersję.
+
+## Współpraca z innymi modułami
+
+- Typy przedmiotów, podtypy, atrybuty, umiejętności, rodzaje ruchu, zmysły, obrażenia i stany kreator czyta z konfiguracji systemu, więc widzi też to, co dodają moduły z podręcznikami.
+- Gdy Foundry działa po polsku i aktywne jest tłumaczenie „dnd5e pl”, nazwy w kreatorze pochodzą z tego tłumaczenia (zgodne z kartami postaci). W pozostałych przypadkach kreator używa własnych polskich nazw.
+- Każdą funkcję modułu można wyłączyć w ustawieniach.
+
+### API
+
+```js
+const api = game.modules.get("new-tavern").api;
+api.open(actor);          // kreator (opcjonalnie dla postaci)
+api.edit(item);           // edytor istniejącego przedmiotu
+api.registerTarget({ id: "my-bonus", label: "Moja premia", short: "mojej premii", group: "Inne",
+  cls: "roll", dice: true, ops: ["bonus"], keys: { bonus: ["system.bonuses.my.value"] } });
+api.registerPreset({ id: "my-ring", label: "Mój pierścień", hint: "+2 KP",
+  item: { name: "Mój pierścień", type: "equipment", subtype: "ring" }, effects: [] });
+```
+
+Hook `tavernsOhMy.ready` (z obiektem API) wywoływany jest po załadowaniu modułu – to dobre miejsce na rejestrację.

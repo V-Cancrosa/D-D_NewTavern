@@ -1,5 +1,5 @@
 import { toSystemDice } from "./labels.js";
-import { FORMULA_REFS, OPERATIONS, getSetOptions, getTarget, allowedKinds } from "./catalog.js";
+import { getFormulaRefs, OPERATIONS, getSetOptions, getTarget, allowedKinds } from "./catalog.js";
 
 export const isV14 = () => (game.release?.generation ?? 13) >= 14;
 
@@ -33,7 +33,7 @@ export function valueText(row, target) {
   const unit = target?.unit ? ` ${target.unit}` : "";
   switch ( row.kind ) {
     case "dice": return `${row.count}k${row.die}`;
-    case "formula": return (FORMULA_REFS.find(r => r.value === row.ref)?.label ?? row.ref).toLowerCase();
+    case "formula": return (getFormulaRefs().find(r => r.value === row.ref)?.label ?? row.ref).toLowerCase();
     default: return `${row.num}${unit}`;
   }
 }
