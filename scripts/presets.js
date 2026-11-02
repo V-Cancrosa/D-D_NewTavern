@@ -55,7 +55,9 @@ export const PRESETS = [
       description: "Pijący odzyskuje 2k4 + 2 punkty wytrzymałości." },
     effects: [],
     usage: { kind: "heal", activation: "action", heal: { count: 2, die: 4, bonus: "2" } },
-    uses: { enabled: true, max: 1, recovery: "", formula: "", autoDestroy: true }
+    uses: { enabled: true, max: 1, recovery: "", formula: "", autoDestroy: true },
+    // Zasady 2024: wypicie mikstury to akcja dodatkowa.
+    rules: { "2024": { usage: { activation: "bonus" } } }
   },
   {
     id: "potion-giant", label: "Mikstura siły olbrzyma", hint: "Siła 21 na 1 godzinę",
@@ -66,7 +68,9 @@ export const PRESETS = [
       mode: "timed", duration: { value: 1, units: "hours", expiry: "turnStart" }
     })],
     usage: { kind: "utility", activation: "action" },
-    uses: { enabled: true, max: 1, recovery: "", formula: "", autoDestroy: true }
+    uses: { enabled: true, max: 1, recovery: "", formula: "", autoDestroy: true },
+    // Zasady 2024: wypicie mikstury to akcja dodatkowa.
+    rules: { "2024": { usage: { activation: "bonus" } } }
   },
   {
     id: "wand-cure", label: "Różdżka leczenia", hint: "7 ładunków, 1k6+1 o świcie",

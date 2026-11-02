@@ -45,6 +45,8 @@ export const PL = {
     burrow: "Szybkość kopania", jump: "Skok" },
   senses: { darkvision: "Widzenie w ciemności", blindsight: "Ślepowidzenie", tremorsense: "Wyczucie drgań",
     truesight: "Prawdziwe widzenie" },
+  masteries: { cleave: "rozpłatanie", graze: "drasnięcie", nick: "nacięcie", push: "odepchnięcie", sap: "osłabienie",
+    slow: "spowolnienie", topple: "przewrócenie", vex: "nękanie" },
   abbr: { str: "SIŁ", dex: "ZRC", con: "KON", int: "INT", wis: "MDR", cha: "CHA" },
   itemTypes: { equipment: "Wyposażenie", weapon: "Broń", consumable: "Materiał eksploatacyjny", tool: "Narzędzie",
     loot: "Łup", feat: "Cecha / zdolność" },

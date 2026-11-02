@@ -35,9 +35,30 @@
       </li>
       {{/each}}
     </ol>
+    <details class="nt-card" {{#if compendiumOpen}}open{{/if}}>
+      <summary class="nt-more">…albo zacznij od przedmiotu z kompendium ({{typeLabel}}, {{rulesLabel}})</summary>
+      <div class="nt-pad nt-top-pad">
+        <input type="text" class="nt-search" data-field="search" value="{{s.search}}" placeholder="Szukaj po nazwie, np. pierścień" aria-label="Szukaj w kompendiach">
+      </div>
+      <ol class="nt-list">
+        {{#each compendium}}
+        <li>
+          <button type="button" class="nt-row {{#if active}}active{{/if}}" data-action="fromCompendium" data-uuid="{{uuid}}">
+            <img class="nt-thumb" src="{{img}}" alt="">
+            <span class="nt-lb">{{name}}<span class="nt-hint">{{rarityLabel}} · {{pack}}</span></span>
+            <span class="nt-radio {{#if active}}on{{/if}}" aria-hidden="true"></span>
+          </button>
+        </li>
+        {{else}}
+        <li><p class="nt-note">Brak magicznych przedmiotów tego rodzaju w kompendiach dla tych zasad{{#if s.search}} pasujących do „{{s.search}}”{{/if}}.</p></li>
+        {{/each}}
+      </ol>
+      {{#if compendiumMore}}<p class="nt-note">…i {{compendiumMore}} więcej – zawęź wyszukiwanie.</p>{{/if}}
+      <p class="nt-note nt-muted">Kreator robi kopię – oryginał w kompendium zostaje bez zmian.</p>
+    </details>
     {{#if presets.length}}
     <details class="nt-card" {{#if s.preset}}open{{/if}}>
-      <summary class="nt-more">…albo zacznij od szablonu ({{typeLabel}})</summary>
+      <summary class="nt-more">…albo z gotowego szablonu modułu</summary>
       <ol class="nt-list">
         {{#each presets}}
         <li>
@@ -77,6 +98,16 @@
           {{#each attunements}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
         </select>
       </label>
+      <label class="nt-fg"><span>Zasady</span>
+        <select data-field="item.rules">{{#each rulesOptions}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select>
+      </label>
+      {{#if rulesMismatch}}<p class="nt-note nt-warn">Świat używa zasad {{worldRules}}. Przedmiot zostanie oznaczony jako przedmiot z drugiej wersji zasad – nic nie zostanie przerobione automatycznie.</p>{{/if}}
+      <div class="nt-fg"><span>Cena</span>
+        <span class="nt-inline nt-grow"><input type="number" min="0" class="nt-num nt-wide-num" data-field="item.price" data-dtype="Number" value="{{s.item.price}}" aria-label="Cena"> sz
+          {{#if priceMedian}}<button type="button" class="nt-chip" data-action="applyPrice" data-value="{{priceMedian}}" data-tooltip="{{priceHint}}">wstaw {{priceMedian}} sz</button>{{/if}}
+        </span>
+      </div>
+      {{#if priceHint}}<p class="nt-note nt-muted">Podpowiedź: {{priceHint}}.</p>{{/if}}
       <label class="nt-fg"><span>Ilość</span>
         <input type="number" min="1" class="nt-num" data-field="item.quantity" data-dtype="Number" value="{{s.item.quantity}}">
       </label>
@@ -93,6 +124,11 @@
         <select data-field="item.damage.die" data-dtype="Number" aria-label="Kość">{{#each weaponDice}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select>
         <select data-field="item.damage.type" aria-label="Rodzaj obrażeń">{{#each weaponDamageTypes}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select>
       </div>
+      {{#if masteries.length}}
+      <label class="nt-fg nt-top"><span>Mistrzostwo</span>
+        <select data-field="item.mastery"><option value="">—</option>{{#each masteries}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select>
+      </label>
+      {{/if}}
     </div>
     {{/if}}
     {{#if hasMagicalBonus}}

@@ -4,6 +4,7 @@ import { getFormulaRefs, OPERATIONS, VALUE_KINDS, getAbilities, allowedKinds, ge
 import { DURATION_UNITS, EXPIRY, buildItemData, describeDuration, describeRow, isV14, saveItem } from "./builder.js";
 import { readItem } from "./reader.js";
 import { PRESETS } from "./presets.js";
+import { loadIndex, medianPrice, searchIndex, worldRules } from "./sources.js";
 import { PL, pl, plOptions } from "./labels.js";
 
 const MODULE_ID = "new-tavern";
@@ -64,14 +65,17 @@ function defaultState(actor) {
     openRow: 0,
     intents: { passive: false, use: false, charges: false, timed: false },
     item: { name: "", img: "", type: "equipment", subtype: "", rarity: "", attunement: "", magical: false,
-      equipped: true, quantity: 1, description: "", magicalBonus: 0, damage: { count: 1, die: 8, type: "slashing" } },
+      equipped: true, quantity: 1, description: "", magicalBonus: 0, damage: { count: 1, die: 8, type: "slashing" },
+      rules: worldRules(), price: 0, priceDenomination: "gp", mastery: "" },
     effects: [],
     usage: { kind: "none", activation: "action", cost: 1, scaling: false,
       heal: { count: 2, die: 4, bonus: "" }, damage: { count: 1, die: 6, bonus: "", type: "fire" },
       save: { ability: "dex", dc: 15, onSave: "half" } },
     uses: { enabled: false, max: 1, recovery: "", formula: "", autoDestroy: false },
     destination: { actorId: actor?.id ?? "", folder: "", openSheet: false },
-    preset: null
+    preset: null,
+    source: null,
+    search: ""
   };
 }
 
@@ -128,6 +132,8 @@ export default class NewTavernWizard extends HandlebarsApplicationMixin(Applicat
       next: NewTavernWizard.#onNext,
       prev: NewTavernWizard.#onPrev,
       preset: NewTavernWizard.#onPreset,
+      fromCompendium: NewTavernWizard.#onFromCompendium,
+      applyPrice: NewTavernWizard.#onApplyPrice,
       itemType: NewTavernWizard.#onItemType,
       intent: NewTavernWizard.#onIntent,
       pickImage: NewTavernWizard.#onPickImage,
@@ -246,11 +252,28 @@ export default class NewTavernWizard extends HandlebarsApplicationMixin(Applicat
     ctx.itemTypes = itemTypeList().map(t => ({ ...t, icon: typeIcon(t.value), active: t.value === s.item.type }));
     ctx.presets = PRESETS.filter(p => p.item.type === s.item.type)
       .map(p => ({ ...p, active: p.id === s.preset }));
+    const compIndex = await this.#index();
+    const found = searchIndex(compIndex, { type: s.item.type, rules: s.item.rules, query: s.search ?? "" });
+    ctx.compendium = found.results.map(e => ({ ...e, active: e.uuid === s.source?.uuid,
+      rarityLabel: pl("rarity", e.rarity, D.itemRarity?.[e.rarity] ?? "") }));
+    ctx.compendiumMore = Math.max(found.total - found.results.length, 0);
+    ctx.compendiumOpen = !!(s.source || s.search);
+    ctx.rulesLabel = s.item.rules === "2014" ? "zasady 2014" : "zasady 2024";
     ctx.folders = game.folders.filter(f => f.type === "Item")
       .map(f => ({ id: f.id, name: f.name, selected: f.id === s.destination.folder }));
     ctx.showFolder = !this.editing && !s.destination.actorId && ctx.folders.length;
 
     // 2. Podstawy
+    const world = worldRules();
+    ctx.rulesOptions = [{ value: "2024", label: "2024 (nowe)", selected: s.item.rules === "2024" },
+      { value: "2014", label: "2014 (klasyczne)", selected: s.item.rules === "2014" }];
+    ctx.rulesMismatch = s.item.rules !== world;
+    ctx.worldRules = world;
+    ctx.masteries = s.item.rules === "2024" ? plOptions("masteries", D.weaponMasteries, s.item.mastery) : [];
+    const median = medianPrice(compIndex, { rarity: s.item.rarity, rules: s.item.rules,
+      consumable: s.item.type === "consumable" });
+    ctx.priceHint = median ? `${median.median} sz – mediana ${median.count} przedmiotów o tej rzadkości w Twoich kompendiach (${ctx.rulesLabel})` : "";
+    ctx.priceMedian = median?.median ?? 0;
     ctx.subtypes = plOptions("subtypes", subtypeSource, s.item.subtype)
       .filter(o => !["sim", "mar", "lgt", "med", "hvy", "shl", "cleave"].includes(o.value));
     ctx.rarities = plOptions("rarity", D.itemRarity, s.item.rarity);
@@ -319,7 +342,7 @@ export default class NewTavernWizard extends HandlebarsApplicationMixin(Applicat
     ctx.isConsumable = s.item.type === "consumable";
 
     // 7. Gotowe / przegląd
-    const tags = [pl("rarity", s.item.rarity, "")];
+    const tags = [pl("rarity", s.item.rarity, ""), s.item.rules === "2014" ? "zasady 2014" : "zasady 2024"];
     if ( s.item.attunement === "required" ) tags.push("wymaga dostrojenia");
     if ( s.item.magical || Number(s.item.magicalBonus) ) tags.push("magiczny");
     ctx.tags = tags.filter(Boolean);
@@ -331,6 +354,16 @@ export default class NewTavernWizard extends HandlebarsApplicationMixin(Applicat
     ctx.ownerName = this.item?.parent?.name ?? "";
     ctx.overview = this.#overview();
     return ctx;
+  }
+
+  /** Indeks kompendiów (wczytywany raz, przy pierwszym renderze). */
+  async #index() {
+    try {
+      return await loadIndex();
+    } catch(err) {
+      console.warn(`${MODULE_ID} | Indeks kompendiów niedostępny`, err);
+      return [];
+    }
   }
 
   #prepareRows(effect) {
@@ -400,7 +433,8 @@ export default class NewTavernWizard extends HandlebarsApplicationMixin(Applicat
       .map(e => `${e.name}: ${e.rows.map(r => describeRow(r).replace(/\.$/, "")).join(" · ")}`).join(" | ");
     const sum = this.#summary();
     return [
-      { step: "basics", icon: "fa-solid fa-ring", label: "Podstawy", hint: basics, empty: false },
+      { step: "basics", icon: "fa-solid fa-ring", label: "Podstawy",
+        hint: `${basics} · zasady ${s.item.rules}${s.item.rules !== worldRules() ? " (inne niż świat!)" : ""}`, empty: false },
       { step: "intents", icon: "fa-solid fa-list-check", label: "Co robi ten przedmiot?",
         hint: INTENTS.filter(i => s.intents[i.id]).map(i => i.label.toLowerCase()).join(", ") || "nic nie wybrano" },
       { step: "effects", icon: "fa-solid fa-shield-halved", label: "Premie i efekty", hint: eff || "brak",
@@ -445,6 +479,7 @@ export default class NewTavernWizard extends HandlebarsApplicationMixin(Applicat
       Object.assign(row, { op: t.ops[0], kind: "number", tags: [], num: defaultNum(t, t.ops[0]), count: 1 });
     }
     if ( path === "item.type" ) this.nt.item.subtype = "";
+    if ( path === "search" ) return this.render();
     if ( (el.tagName === "TEXTAREA") || (el.type === "text") ) {
       if ( path === "item.name" ) this.element.querySelectorAll(".nt-name").forEach(n => n.textContent = value);
       return;
@@ -492,13 +527,22 @@ export default class NewTavernWizard extends HandlebarsApplicationMixin(Applicat
     if ( !p ) return;
     const base = defaultState();
     const s = this.nt;
+    const rules = s.item.rules;
     s.item = foundry.utils.mergeObject(base.item, foundry.utils.deepClone(p.item));
+    s.item.rules = rules;
     s.effects = foundry.utils.deepClone(p.effects).map(e => ({ ...e, id: foundry.utils.randomID() }));
     s.usage = foundry.utils.mergeObject(base.usage, foundry.utils.deepClone(p.usage ?? {}));
     s.uses = foundry.utils.mergeObject(base.uses, foundry.utils.deepClone(p.uses ?? {}));
+    const override = p.rules?.[s.item.rules] ?? null;
+    if ( override ) {
+      if ( override.item ) Object.assign(s.item, foundry.utils.deepClone(override.item));
+      if ( override.usage ) Object.assign(s.usage, foundry.utils.deepClone(override.usage));
+    }
     s.current = 0;
     s.openRow = null;
     s.preset = p.id;
+    s.source = null;
+    s.editing = null;
     deriveIntents(s);
     this.render();
   }
@@ -507,6 +551,27 @@ export default class NewTavernWizard extends HandlebarsApplicationMixin(Applicat
     this.nt.item.type = target.dataset.value;
     this.nt.item.subtype = "";
     this.nt.preset = null;
+    this.nt.source = null;
+    this.nt.editing = null;
+    this.render();
+  }
+
+  /** Wczytuje przedmiot z kompendium jako punkt wyjścia (oryginał zostaje nietknięty). */
+  static async #onFromCompendium(event, target) {
+    const uuid = target.dataset.uuid;
+    const doc = await fromUuid(uuid);
+    if ( !doc ) return ui.notifications.warn("Nie znaleziono przedmiotu w kompendium.");
+    const keep = { destination: this.nt.destination, search: this.nt.search };
+    const s = readItem(doc, defaultState());
+    Object.assign(s, keep, { step: "start", current: 0, openRow: null, preset: uuid,
+      source: { uuid, name: doc.name } });
+    deriveIntents(s);
+    this.nt = s;
+    this.render();
+  }
+
+  static #onApplyPrice(event, target) {
+    this.nt.item.price = Number(target.dataset.value) || 0;
     this.render();
   }
 
@@ -651,10 +716,20 @@ export default class NewTavernWizard extends HandlebarsApplicationMixin(Applicat
       return;
     }
     const actor = game.actors.get(s.destination.actorId) ?? null;
-    const data = buildItemData(s, { forActor: !!actor });
+    let data = buildItemData(s, { forActor: !!actor });
     try {
       let item;
-      if ( actor ) [item] = await actor.createEmbeddedDocuments("Item", [data]);
+      if ( s.source?.uuid ) {
+        // Kopia przedmiotu z kompendium (jak przeciągnięcie), potem zmiany z kreatora.
+        const original = await fromUuid(s.source.uuid);
+        data = original.toObject();
+        delete data._id;
+        foundry.utils.setProperty(data, "_stats.compendiumSource", s.source.uuid);
+        if ( actor ) [item] = await actor.createEmbeddedDocuments("Item", [data]);
+        else item = await Item.implementation.create({ ...data, folder: s.destination.folder || null });
+        await saveItem(item, s);
+      }
+      else if ( actor ) [item] = await actor.createEmbeddedDocuments("Item", [data]);
       else item = await Item.implementation.create({ ...data, folder: s.destination.folder || null });
       ui.notifications.info(actor ? `Dodano „${item.name}” do karty: ${actor.name}.`
         : `Utworzono „${item.name}” w katalogu przedmiotów.`);

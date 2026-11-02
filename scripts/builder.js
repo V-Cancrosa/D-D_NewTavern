@@ -191,6 +191,9 @@ export function buildItemData(state, { forActor = false } = {}) {
     properties: i.magical || Number(i.magicalBonus) ? ["mgc"] : []
   };
   if ( i.subtype ) system.type = { value: i.subtype };
+  if ( i.rules ) system.source = { rules: i.rules };
+  if ( Number(i.price) > 0 ) system.price = { value: Number(i.price), denomination: i.priceDenomination || "gp" };
+  if ( (i.type === "weapon") && (i.rules === "2024") && i.mastery ) system.mastery = i.mastery;
   if ( forActor ) {
     if ( i.equipped ) system.equipped = true;
     if ( i.equipped && i.attunement === "required" ) system.attuned = true;
@@ -244,8 +247,12 @@ export async function saveItem(item, state) {
   const update = {
     name: built.name, img: built.img,
     "system.quantity": sys.quantity, "system.rarity": sys.rarity, "system.attunement": sys.attunement,
-    "system.properties": [...properties]
+    "system.properties": [...properties],
+    "system.price.value": Number(i.price) || 0,
+    "system.price.denomination": i.priceDenomination || "gp"
   };
+  if ( i.rules ) update["system.source.rules"] = i.rules;
+  if ( (item.type === "weapon") && ("mastery" in item.system) ) update["system.mastery"] = (i.rules === "2024") ? (i.mastery || "") : (item.system.mastery ?? "");
   if ( "type" in item.system && (typeof item.system.type === "object") ) update["system.type.value"] = i.subtype || "";
   if ( i.description !== i.descriptionOriginal ) update["system.description.value"] = sys.description.value;
   if ( item.isEmbedded && ("equipped" in item.system) ) {
