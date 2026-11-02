@@ -88,6 +88,14 @@
         </select>
       </label>
       {{/if}}
+      {{#if baseItems.length}}
+      <label class="nt-fg"><span>Przedmiot bazowy</span>
+        <select data-field="item.baseItem"><option value="">—</option>
+          {{#each baseItems}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+        </select>
+      </label>
+      <p class="nt-note nt-muted">Wybór uzupełnia obrażenia, właściwości, zasięg, wagę i cenę{{#if isArmor}} oraz KP{{/if}} – jak w karcie systemu.</p>
+      {{/if}}
       <label class="nt-fg"><span>Rzadkość</span>
         <select data-field="item.rarity"><option value="">—</option>
           {{#each rarities}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
@@ -124,6 +132,12 @@
         <select data-field="item.damage.die" data-dtype="Number" aria-label="Kość">{{#each weaponDice}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select>
         <select data-field="item.damage.type" aria-label="Rodzaj obrażeń">{{#each weaponDamageTypes}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select>
       </div>
+      {{#if isVersatile}}
+      <div class="nt-sentence">Oburęcznie
+        <input type="number" min="0" class="nt-num" data-field="item.versatile.count" data-dtype="Number" value="{{s.item.versatile.count}}" aria-label="Kości oburęcznie">
+        <select data-field="item.versatile.die" data-dtype="Number" aria-label="Kość oburęcznie"><option value="0">—</option>{{#each versatileDice}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select>
+      </div>
+      {{/if}}
       {{#if masteries.length}}
       <label class="nt-fg nt-top"><span>Mistrzostwo</span>
         <select data-field="item.mastery"><option value="">—</option>{{#each masteries}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select>
@@ -154,6 +168,49 @@
         <span class="nt-inline">+<input type="number" min="0" max="5" class="nt-num" data-field="item.magicalBonus" data-dtype="Number" value="{{s.item.magicalBonus}}"></span>
       </label>
       <p class="nt-note">{{#if isWeapon}}Dodaje się do trafienia i obrażeń.{{else}}Dodaje się do KP zbroi lub tarczy.{{/if}}</p>
+    </div>
+    {{/if}}
+
+    {{#if hasMore}}
+    <details class="nt-card" data-ui="more" {{#if s.ui.more}}open{{/if}}>
+      <summary class="nt-more">Więcej opcji</summary>
+      {{#if propertyOptions.length}}
+      <div class="nt-legend">Właściwości</div>
+      <div class="nt-pills nt-pad">
+        {{#each propertyOptions}}<button type="button" class="nt-chip {{#if active}}active{{/if}}" data-action="toggleProp" data-value="{{value}}">{{label}}</button>{{/each}}
+      </div>
+      {{/if}}
+      {{#if isWeapon}}
+      <label class="nt-fg nt-top"><span>Biegłość</span>
+        <select data-field="item.proficient">{{#each proficiencyOptions}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select>
+      </label>
+      <div class="nt-fg"><span>Zasięg</span>
+        <span class="nt-inline">{{#if isRanged}}
+          <input type="number" min="0" class="nt-num" data-field="item.range.value" value="{{s.item.range.value}}" aria-label="Zasięg normalny"> /
+          <input type="number" min="0" class="nt-num" data-field="item.range.long" value="{{s.item.range.long}}" aria-label="Zasięg daleki"> ft
+          {{else}}wręcz <input type="number" min="0" class="nt-num" data-field="item.range.reach" value="{{s.item.range.reach}}" aria-label="Zasięg wręcz"> ft{{/if}}
+        </span>
+      </div>
+      {{/if}}
+      {{#if isArmor}}
+      <label class="nt-fg nt-top"><span>Biegłość</span>
+        <select data-field="item.proficient">{{#each proficiencyOptions}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}</select>
+      </label>
+      {{/if}}
+      <label class="nt-fg"><span>Waga</span><span class="nt-inline"><input type="number" min="0" step="0.1" class="nt-num" data-field="item.weight" data-dtype="Number" value="{{s.item.weight}}"> lb</span></label>
+    </details>
+    {{/if}}
+
+    {{#if impact}}
+    <div class="nt-tip nt-impact">
+      <div class="nt-legend nt-flush">Wpływ na: {{impact.actorName}}</div>
+      {{#if impact.error}}<p class="nt-line nt-muted">Nie udało się policzyć wpływu ({{impact.error}}).</p>{{/if}}
+      {{#each impact.rows}}
+      <div class="nt-irow"><span>{{label}}</span><span class="nt-muted">{{before}}</span><span aria-hidden="true">→</span><span class="nt-{{cls}}">{{after}}</span></div>
+      {{/each}}
+      {{#each impact.notes}}<div class="nt-line nt-muted">{{this}}</div>{{/each}}
+      {{#each impact.warnings}}<div class="nt-line nt-warn">⚠ {{this}}</div>{{/each}}
+      <div class="nt-line nt-muted nt-small">Liczone na kopii postaci w pamięci – nic nie jest zapisywane.</div>
     </div>
     {{/if}}
 
@@ -279,7 +336,7 @@
         {{/if}}
       </div>
       {{/each}}
-      <details class="nt-statuses">
+      <details class="nt-statuses" data-ui="statuses" {{#if s.ui.statuses}}open{{/if}}>
         <summary class="nt-tr nt-muted">Nadaje stany: {{statusText}}</summary>
         <div class="nt-pills nt-pad">
           {{#each statuses}}<button type="button" class="nt-chip {{#if active}}active{{/if}}" data-action="toggleStatus" data-value="{{id}}">{{label}}</button>{{/each}}
@@ -391,6 +448,18 @@
       <div class="nt-line nt-muted">Zwykły przedmiot, bez efektów i użycia.</div>
       {{/each}}
     </div>
+    {{#if impact}}
+    <div class="nt-tip nt-impact">
+      <div class="nt-legend nt-flush">Wpływ na: {{impact.actorName}}</div>
+      {{#if impact.error}}<p class="nt-line nt-muted">Nie udało się policzyć wpływu ({{impact.error}}).</p>{{/if}}
+      {{#each impact.rows}}
+      <div class="nt-irow"><span>{{label}}</span><span class="nt-muted">{{before}}</span><span aria-hidden="true">→</span><span class="nt-{{cls}}">{{after}}</span></div>
+      {{/each}}
+      {{#each impact.notes}}<div class="nt-line nt-muted">{{this}}</div>{{/each}}
+      {{#each impact.warnings}}<div class="nt-line nt-warn">⚠ {{this}}</div>{{/each}}
+      <div class="nt-line nt-muted nt-small">Liczone na kopii postaci w pamięci – nic nie jest zapisywane.</div>
+    </div>
+    {{/if}}
     <div class="nt-card">
       <label class="nt-fg"><span>Dla kogo</span>
         <select data-field="destination.actorId"><option value="">— tylko katalog przedmiotów —</option>

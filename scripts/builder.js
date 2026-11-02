@@ -1,6 +1,14 @@
 import { toSystemDice } from "./labels.js";
 import { getFormulaRefs, OPERATIONS, getSetOptions, getTarget, allowedKinds } from "./catalog.js";
 
+/** Właściwości przedmiotu (zestaw z kreatora + „magiczny”). */
+export function itemProperties(i) {
+  const props = new Set(i.properties ?? []);
+  if ( i.magical || Number(i.magicalBonus) ) props.add("mgc");
+  else props.delete("mgc");
+  return [...props];
+}
+
 /** Zbroje i tarcze – podtypy wyposażenia, które liczą się do KP. */
 export const ARMOR_SUBTYPES = ["light", "medium", "heavy", "natural", "shield"];
 export const isArmorItem = i => (i.type === "equipment") && ARMOR_SUBTYPES.includes(i.subtype);
@@ -192,9 +200,16 @@ export function buildItemData(state, { forActor = false } = {}) {
     rarity: i.rarity || "",
     attunement: i.attunement || "",
     identified: true,
-    properties: i.magical || Number(i.magicalBonus) ? ["mgc"] : []
+    properties: itemProperties(i)
   };
-  if ( i.subtype ) system.type = { value: i.subtype };
+  if ( i.subtype || i.baseItem ) system.type = { value: i.subtype || "", baseItem: i.baseItem || "" };
+  if ( (i.proficient !== null) && (i.proficient !== undefined) && (i.proficient !== "") ) system.proficient = Number(i.proficient);
+  if ( Number(i.weight) > 0 ) system.weight = { value: Number(i.weight), units: "lb" };
+  if ( i.type === "weapon" ) {
+    const r = i.range ?? {};
+    const num = v => (v === "" || v === null || v === undefined) ? null : Number(v);
+    system.range = { value: num(r.value), long: num(r.long), reach: num(r.reach), units: r.units || "ft" };
+  }
   if ( i.rules ) system.source = { rules: i.rules };
   if ( Number(i.price) > 0 ) system.price = { value: Number(i.price), denomination: i.priceDenomination || "gp" };
   if ( (i.type === "weapon") && (i.rules === "2024") && i.mastery ) system.mastery = i.mastery;
@@ -213,6 +228,8 @@ export function buildItemData(state, { forActor = false } = {}) {
   if ( i.type === "weapon" && Number(i.damage.count) ) {
     system.damage = { base: { number: Number(i.damage.count), denomination: Number(i.damage.die),
       types: [i.damage.type] } };
+    if ( Number(i.versatile?.count) && Number(i.versatile?.die) ) system.damage.versatile = {
+      number: Number(i.versatile.count), denomination: Number(i.versatile.die), types: [i.damage.type] };
   }
   if ( state.uses.enabled ) {
     const u = state.uses;
@@ -254,9 +271,7 @@ export async function saveItem(item, state) {
   const ed = state.editing ?? {};
 
   // Pola przedmiotu
-  const properties = new Set(item.system.properties ?? []);
-  if ( i.magical || Number(i.magicalBonus) ) properties.add("mgc");
-  else properties.delete("mgc");
+  const properties = new Set(itemProperties(i));
   const update = {
     name: built.name, img: built.img,
     "system.quantity": sys.quantity, "system.rarity": sys.rarity, "system.attunement": sys.attunement,
@@ -265,6 +280,14 @@ export async function saveItem(item, state) {
     "system.price.denomination": i.priceDenomination || "gp"
   };
   if ( i.rules ) update["system.source.rules"] = i.rules;
+  if ( "baseItem" in (item.system.type ?? {}) ) update["system.type.baseItem"] = i.baseItem || "";
+  if ( "proficient" in item.system ) update["system.proficient"] = (i.proficient === null || i.proficient === "" || i.proficient === undefined) ? null : Number(i.proficient);
+  if ( "weight" in item.system ) update["system.weight.value"] = Number(i.weight) || 0;
+  if ( sys.range ) update["system.range"] = sys.range;
+  if ( sys.damage?.versatile ) {
+    update["system.damage.versatile.number"] = sys.damage.versatile.number;
+    update["system.damage.versatile.denomination"] = sys.damage.versatile.denomination;
+  }
   if ( (item.type === "weapon") && ("mastery" in item.system) ) update["system.mastery"] = (i.rules === "2024") ? (i.mastery || "") : (item.system.mastery ?? "");
   if ( "type" in item.system && (typeof item.system.type === "object") ) update["system.type.value"] = i.subtype || "";
   if ( i.description !== i.descriptionOriginal ) update["system.description.value"] = sys.description.value;

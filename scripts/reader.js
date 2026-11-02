@@ -105,10 +105,15 @@ export function readItem(item, base) {
   Object.assign(s.item, {
     name: item.name, img: item.img, type: item.type,
     subtype: sys.type?.value ?? "", rarity: sys.rarity ?? "", attunement: sys.attunement ?? "",
-    magical: sys.properties?.has?.("mgc") ?? false, equipped: !!sys.equipped,
+    magical: sys.properties?.has?.("mgc") ?? [...(sys.properties ?? [])].includes("mgc"), equipped: !!sys.equipped,
     quantity: sys.quantity ?? 1, description, descriptionOriginal: description,
     magicalBonus: Number(item.type === "equipment" ? sys.armor?.magicalBonus : sys.magicalBonus) || 0,
     armor: { value: sys.armor?.value ?? 0, dex: sys.armor?.dex ?? "", strength: sys.strength ?? 0 },
+    baseItem: sys.type?.baseItem ?? "", properties: [...(sys.properties ?? [])], proficient: sys.proficient ?? null,
+    weight: Number(sys.weight?.value ?? sys.weight) || 0,
+    range: { value: sys.range?.value ?? null, long: sys.range?.long ?? null, reach: sys.range?.reach ?? null,
+      units: sys.range?.units ?? "ft" },
+    versatile: { count: sys.damage?.versatile?.number ?? 0, die: sys.damage?.versatile?.denomination ?? 0 },
     rules: sys.source?.rules || s.item.rules, price: Number(sys.price?.value) || 0,
     priceDenomination: sys.price?.denomination || "gp", mastery: sys.mastery ?? ""
   });
