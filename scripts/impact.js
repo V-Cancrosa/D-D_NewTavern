@@ -51,8 +51,9 @@ export function computeImpact(actor, itemData, { replaceId = null } = {}) {
     foundry.utils.setProperty(item, "system.equipped", true);
     if ( get(item, "system.attunement") === "required" ) foundry.utils.setProperty(item, "system.attuned", true);
     data.items = (data.items ?? []).filter(i => i._id !== item._id).concat(item);
+    // Foundry przygotowuje dane dokumentu już przy jego tworzeniu. Drugie wywołanie prepareData()
+    // rzuca błąd w dnd5e 6 („Cannot redefine property: walk”), więc go nie robimy.
     const temp = new Actor.implementation(data);
-    temp.prepareData?.();
 
     const before = snapshot(actor);
     const after = snapshot(temp);
