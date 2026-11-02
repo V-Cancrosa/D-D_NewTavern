@@ -1,4 +1,4 @@
-import { FORMULA_REFS, OPERATIONS, getTargets } from "./catalog.js";
+import { getFormulaRefs, OPERATIONS, getTargets } from "./catalog.js";
 import { isV14 } from "./builder.js";
 import { toPolishDice } from "./labels.js";
 
@@ -18,7 +18,7 @@ function parseValue(value) {
   if ( /^[-+]?\d+(\.\d+)?$/.test(v) ) return { kind: "number", num: Number(v) };
   const dice = v.match(/^(\d+)d(\d+)$/i);
   if ( dice ) return { kind: "dice", count: Number(dice[1]), die: Number(dice[2]) };
-  if ( FORMULA_REFS.some(r => r.value === v) ) return { kind: "formula", ref: v };
+  if ( getFormulaRefs().some(r => r.value === v) ) return { kind: "formula", ref: v };
   return null;
 }
 

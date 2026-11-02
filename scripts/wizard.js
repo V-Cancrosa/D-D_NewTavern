@@ -1,4 +1,5 @@
-import { FORMULA_REFS, OPERATIONS, VALUE_KINDS, ABILITIES, allowedKinds, getSetOptions, getTarget, getTargets }
+import { getFormulaRefs, OPERATIONS, VALUE_KINDS, getAbilities, allowedKinds, getSetOptions, getTarget, getTargets,
+  getItemTypes }
   from "./catalog.js";
 import { DURATION_UNITS, EXPIRY, buildItemData, describeDuration, describeRow, isV14, saveItem } from "./builder.js";
 import { readItem } from "./reader.js";
@@ -8,14 +9,13 @@ import { PL, pl, plOptions } from "./labels.js";
 const MODULE_ID = "new-tavern";
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
-const ITEM_TYPES = [
-  { value: "equipment", label: "Wyposażenie", hint: "pierścienie, płaszcze, różdżki, zbroje" },
-  { value: "weapon", label: "Broń", hint: "miecze, łuki, broń +1" },
-  { value: "consumable", label: "Materiał eksploatacyjny", hint: "mikstury, zwoje, amunicja" },
-  { value: "tool", label: "Narzędzie", hint: "zestawy, instrumenty" },
-  { value: "loot", label: "Łup", hint: "skarby, klejnoty – bez użycia" },
-  { value: "feat", label: "Cecha / zdolność", hint: "tatuaże, błogosławieństwa, dary" }
-];
+/** Typy przedmiotów z systemu (z polską nazwą i podpowiedzią, gdy je znamy). */
+function itemTypeList() {
+  return getItemTypes().map(value => ({
+    value, label: pl("itemTypes", value, CONFIG.Item?.typeLabels?.[value] ?? value), hint: PL.itemHints[value] ?? ""
+  }));
+}
+const itemTypeLabel = type => itemTypeList().find(t => t.value === type)?.label ?? type;
 
 const INTENTS = [
   { id: "passive", icon: "fa-solid fa-shield-halved", label: "Daje premie, gdy jest noszony",
@@ -105,7 +105,7 @@ const activityIcon = kind => `systems/dnd5e/icons/svg/activity/${kind}.svg`;
 export default class NewTavernWizard extends HandlebarsApplicationMixin(ApplicationV2) {
   constructor(options = {}) {
     const item = options.item ?? null;
-    const title = item ? `New Tavern · edycja: ${item.name}` : "New Tavern · kreator przedmiotu";
+    const title = item ? `Edycja: ${item.name}` : "Kreator przedmiotu";
     options = { ...options, window: { ...(options.window ?? {}), title } };
     if ( item ) options.id = `new-tavern-edit-${item.id}`;
     super(options);
@@ -121,7 +121,7 @@ export default class NewTavernWizard extends HandlebarsApplicationMixin(Applicat
     id: "new-tavern-wizard",
     classes: ["new-tavern", "nt-wizard"],
     tag: "div",
-    window: { title: "New Tavern · kreator przedmiotu", icon: "fa-solid fa-wand-magic-sparkles", resizable: true },
+    window: { title: "Kreator przedmiotu", icon: "fa-solid fa-wand-magic-sparkles", resizable: true },
     position: { width: 470, height: 780 },
     actions: {
       go: NewTavernWizard.#onGo,
@@ -239,11 +239,11 @@ export default class NewTavernWizard extends HandlebarsApplicationMixin(Applicat
       isFirst: index === 0, isLast: s.step === "done",
       name: s.item.name || "Nowy przedmiot",
       img: s.item.img || typeIcon(s.item.type),
-      typeLabel: ITEM_TYPES.find(t => t.value === s.item.type)?.label ?? s.item.type
+      typeLabel: itemTypeLabel(s.item.type)
     };
 
     // 1. Co tworzysz?
-    ctx.itemTypes = ITEM_TYPES.map(t => ({ ...t, icon: typeIcon(t.value), active: t.value === s.item.type }));
+    ctx.itemTypes = itemTypeList().map(t => ({ ...t, icon: typeIcon(t.value), active: t.value === s.item.type }));
     ctx.presets = PRESETS.filter(p => p.item.type === s.item.type)
       .map(p => ({ ...p, active: p.id === s.preset }));
     ctx.folders = game.folders.filter(f => f.type === "Item")
@@ -307,7 +307,8 @@ export default class NewTavernWizard extends HandlebarsApplicationMixin(Applicat
       .filter(o => !["healing", "temphp"].includes(o.value));
     ctx.activations = ["action", "bonus", "reaction", "minute", "hour", "special"]
       .map(v => ({ value: v, label: PL.activation[v], selected: v === u.activation }));
-    ctx.abilities = ABILITIES.map(a => ({ value: a, label: PL.abilities[a], selected: a === u.save.ability }));
+    ctx.abilities = getAbilities().map(a => ({ value: a, label: pl("abilities", a, D.abilities[a]),
+      selected: a === u.save.ability }));
     ctx.onSaveHalf = u.save.onSave === "half";
     ctx.hasCharges = s.intents.charges && !loot;
 
@@ -356,7 +357,7 @@ export default class NewTavernWizard extends HandlebarsApplicationMixin(Applicat
         isFormula: r.kind === "formula" && kinds.includes("formula"),
         isSet: t?.cls === "set",
         dice: DICE.map(d => ({ value: d, label: `k${d}`, active: d === r.die })),
-        refs: FORMULA_REFS.map(f => ({ ...f, active: f.value === r.ref })),
+        refs: getFormulaRefs().map(f => ({ ...f, active: f.value === r.ref })),
         tags: t?.cls === "set" ? getSetOptions(t.options).map(o => ({ ...o, active: r.tags.includes(o.value) })) : [],
         sentence: describeRow(r)
       };
@@ -393,7 +394,7 @@ export default class NewTavernWizard extends HandlebarsApplicationMixin(Applicat
   #overview() {
     const s = this.effectiveState();
     const subtype = s.item.subtype ? pl("subtypes", s.item.subtype) : "";
-    const basics = [ITEM_TYPES.find(t => t.value === s.item.type)?.label, subtype, pl("rarity", s.item.rarity, ""),
+    const basics = [itemTypeLabel(s.item.type), subtype, pl("rarity", s.item.rarity, ""),
       s.item.attunement === "required" ? "wymaga dostrojenia" : ""].filter(Boolean).join(" · ");
     const eff = s.effects.filter(e => e.rows.length || e.statuses.length)
       .map(e => `${e.name}: ${e.rows.map(r => describeRow(r).replace(/\.$/, "")).join(" · ")}`).join(" | ");
@@ -631,7 +632,7 @@ export default class NewTavernWizard extends HandlebarsApplicationMixin(Applicat
   }
 
   static async #onCreate() {
-    if ( !game.user.isGM ) return ui.notifications.warn("Tylko MG może tworzyć i edytować przedmioty w New Tavern.");
+    if ( !game.user.isGM ) return ui.notifications.warn("Tylko MG może tworzyć i edytować przedmioty.");
     const s = this.effectiveState();
     if ( !s.item.name?.trim() ) {
       this.nt.step = this.editing ? "overview" : "start";
@@ -645,7 +646,7 @@ export default class NewTavernWizard extends HandlebarsApplicationMixin(Applicat
         this.close();
       } catch(err) {
         console.error(`${MODULE_ID} |`, err, s);
-        ui.notifications.error(`New Tavern: nie udało się zapisać przedmiotu: ${err.message}`);
+        ui.notifications.error(`Taverns, Oh My!: nie udało się zapisać przedmiotu: ${err.message}`);
       }
       return;
     }
@@ -661,7 +662,7 @@ export default class NewTavernWizard extends HandlebarsApplicationMixin(Applicat
       this.close();
     } catch(err) {
       console.error(`${MODULE_ID} |`, err, data);
-      ui.notifications.error(`New Tavern: nie udało się utworzyć przedmiotu: ${err.message}`);
+      ui.notifications.error(`Taverns, Oh My!: nie udało się utworzyć przedmiotu: ${err.message}`);
     }
   }
 }

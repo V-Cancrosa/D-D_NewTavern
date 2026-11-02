@@ -93,3 +93,14 @@ export const PRESETS = [
     effects: [effect("Odporność na ogień", [row("dr", "grant", { tags: ["fire"] })])]
   }
 ];
+
+/**
+ * Dodaje szablon przedmiotu (API dla innych modułów i MG). Szablon o tym samym `id` zostaje zastąpiony.
+ * @param {object} preset  { id, label, hint, item: {...}, effects?: [], usage?: {}, uses?: {} }
+ */
+export function registerPreset(preset) {
+  if ( !preset?.id || !preset.item?.type ) throw new Error("…and Taverns, Oh My!: registerPreset wymaga id i item.type.");
+  const i = PRESETS.findIndex(p => p.id === preset.id);
+  if ( i >= 0 ) PRESETS.splice(i, 1);
+  PRESETS.push({ effects: [], ...preset });
+}

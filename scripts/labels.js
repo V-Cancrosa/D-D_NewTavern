@@ -41,6 +41,16 @@ export const PL = {
     coverThreeQuarters: "osłona ¾", coverTotal: "osłona pełna", dead: "martwy", dodging: "unik",
     ethereal: "eteryczny", flying: "latający", hiding: "ukryty", hovering: "unoszący się", marked: "naznaczony",
     sleeping: "śpiący", stable: "ustabilizowany" },
+  movement: { walk: "Szybkość", fly: "Szybkość lotu", swim: "Szybkość pływania", climb: "Szybkość wspinaczki",
+    burrow: "Szybkość kopania", jump: "Skok" },
+  senses: { darkvision: "Widzenie w ciemności", blindsight: "Ślepowidzenie", tremorsense: "Wyczucie drgań",
+    truesight: "Prawdziwe widzenie" },
+  abbr: { str: "SIŁ", dex: "ZRC", con: "KON", int: "INT", wis: "MDR", cha: "CHA" },
+  itemTypes: { equipment: "Wyposażenie", weapon: "Broń", consumable: "Materiał eksploatacyjny", tool: "Narzędzie",
+    loot: "Łup", feat: "Cecha / zdolność" },
+  itemHints: { equipment: "pierścienie, płaszcze, różdżki, zbroje", weapon: "miecze, łuki, broń +1",
+    consumable: "mikstury, zwoje, amunicja", tool: "zestawy, instrumenty", loot: "skarby, klejnoty – bez użycia",
+    feat: "tatuaże, błogosławieństwa, dary" },
   abilities: { str: "Siła", dex: "Zręczność", con: "Kondycja", int: "Inteligencja", wis: "Mądrość", cha: "Charyzma" },
   skills: { acr: "Akrobatyka", ani: "Opieka nad zwierzętami", arc: "Wiedza tajemna", ath: "Atletyka",
     dec: "Oszustwo", his: "Historia", ins: "Intuicja", itm: "Zastraszanie", inv: "Śledztwo", med: "Medycyna",
@@ -50,9 +60,27 @@ export const PL = {
 
 const sys = v => game.i18n.localize(typeof v === "string" ? v : (v?.label ?? v?.name ?? ""));
 
-/** Etykieta po polsku z zapasową etykietą systemu. */
+/**
+ * Czy brać etykiety z systemu zamiast z naszej listy. Tak, gdy Foundry działa po polsku i jest aktywne
+ * tłumaczenie dnd5e („dnd5e pl”) – wtedy nazwy w kreatorze zgadzają się z kartami postaci.
+ */
+export function useSystemLabels() {
+  return (game.i18n?.lang === "pl") && !!game.modules?.get("dnd5e_pl")?.active;
+}
+
+/** Etykieta po polsku: z systemu (gdy przetłumaczony), z naszej listy albo – w ostateczności – z systemu. */
 export function pl(group, key, systemValue) {
+  if ( (systemValue !== undefined) && useSystemLabels() ) {
+    const label = sys(systemValue);
+    if ( label && (label !== systemValue) ) return label;
+  }
   return PL[group]?.[key] ?? (systemValue !== undefined ? sys(systemValue) : key);
+}
+
+/** Skrót atrybutu (SIŁ, ZRC…). */
+export function plAbbr(key, cfg) {
+  if ( cfg?.abbreviation && useSystemLabels() ) return game.i18n.localize(cfg.abbreviation).toUpperCase();
+  return PL.abbr[key] ?? game.i18n.localize(cfg?.abbreviation ?? key).toUpperCase();
 }
 
 /** Lista opcji {value,label,selected} z obiektu konfiguracji dnd5e, z polskimi etykietami. */

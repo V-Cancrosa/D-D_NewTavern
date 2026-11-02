@@ -4,11 +4,28 @@
  * oraz jak przełożyć je na klucze dnd5e 5.x (Foundry 13) i 6.x (Foundry 14).
  */
 
-import { PL, pl } from "./labels.js";
+import { pl, plAbbr } from "./labels.js";
 
-export const ABILITIES = ["str", "dex", "con", "int", "wis", "cha"];
-const ABILITY_PL = { str: "Siła", dex: "Zręczność", con: "Kondycja", int: "Inteligencja", wis: "Mądrość", cha: "Charyzma" };
-const ABILITY_GEN = { str: "SIŁ", dex: "ZRC", con: "KON", int: "INT", wis: "MDR", cha: "CHA" };
+/** Atrybuty z konfiguracji systemu (także dodane przez inne moduły). */
+export const getAbilities = () => Object.keys(CONFIG.DND5E?.abilities ?? {});
+const abilityName = a => pl("abilities", a, CONFIG.DND5E?.abilities?.[a]);
+const abilityAbbr = a => plAbbr(a, CONFIG.DND5E?.abilities?.[a]);
+
+/** Rodzaje typów przedmiotów, których kreator nie obsługuje (mają własne, złożone karty). */
+const EXCLUDED_ITEM_TYPES = new Set(["base", "class", "subclass", "race", "background", "spell", "facility",
+  "backpack", "container"]);
+
+/** Czy kreator może tworzyć i edytować przedmioty tego typu. */
+export const isEditableType = type => !!type && !EXCLUDED_ITEM_TYPES.has(type)
+  && (globalThis.Item?.TYPES ?? [type]).includes(type);
+
+/** Typy przedmiotów dostępne w kreatorze – z systemu, więc obejmują też typy dodane przez moduły. */
+export function getItemTypes() {
+  const types = (globalThis.Item?.TYPES ?? ["weapon", "equipment", "consumable", "tool", "loot", "feat"])
+    .filter(isEditableType);
+  const order = ["equipment", "weapon", "consumable", "tool", "loot", "feat"];
+  return types.sort((a, b) => ((order.indexOf(a) + 1) || 99) - ((order.indexOf(b) + 1) || 99));
+}
 
 /** Czy działamy na dnd5e 6.x (nowe ścieżki `system.rolls.*`, `movement.speeds.*`). */
 export const isDnd6 = () => foundry.utils.isNewerVersion(game.system.version, "5.99.99");
@@ -33,14 +50,36 @@ export const VALUE_KINDS = {
   formula: "Z cech postaci"
 };
 
-export const FORMULA_REFS = [
-  { value: "@prof", label: "Premia z biegłości" },
-  { value: "@details.level", label: "Poziom postaci" },
-  ...ABILITIES.map(a => ({ value: `@abilities.${a}.mod`, label: `Mod. ${ABILITY_GEN[a]}` }))
-];
+/** Wartości „z cech postaci”, które kreator rozpoznaje. */
+export function getFormulaRefs() {
+  return [
+    { value: "@prof", label: "Premia z biegłości" },
+    { value: "@details.level", label: "Poziom postaci" },
+    ...getAbilities().map(a => ({ value: `@abilities.${a}.mod`, label: `Mod. ${abilityAbbr(a)}` }))
+  ];
+}
+
+/* -------------------------------------------- */
+/*  Rejestr celów dodawanych przez inne moduły  */
+/* -------------------------------------------- */
+
+const CUSTOM_TARGETS = [];
+let cache = null;
+
+/**
+ * Dodaje własny cel efektu (API dla innych modułów i MG).
+ * @param {object} def  { id, label, short, group?, cls: "stat"|"roll"|"set", ops: string[], keys: {op: string[]},
+ *                        unit?, options?: "damage"|"condition" }
+ */
+export function registerTarget(def) {
+  if ( !def?.id || !def.keys || !Array.isArray(def.ops) ) throw new Error("New Tavern: registerTarget wymaga id, ops i keys.");
+  const i = CUSTOM_TARGETS.findIndex(t => t.id === def.id);
+  if ( i >= 0 ) CUSTOM_TARGETS.splice(i, 1);
+  CUSTOM_TARGETS.push({ group: "Inne", short: def.label, cls: "stat", ...def });
+  cache = null;
+}
 
 const skillKeys = () => Object.keys(CONFIG.DND5E?.skills ?? {});
-const label = v => game.i18n.localize(typeof v === "string" ? v : (v?.label ?? ""));
 
 /**
  * Cel „rzutowy” (premia z kośćmi, przewaga, minimum).
@@ -50,9 +89,17 @@ function roll(def) {
   return { cls: "roll", dice: true, ops: ["bonus", "advantage", "disadvantage", "minimum"], ...def };
 }
 
-/** Lista wszystkich celów. Wywoływana w czasie działania, bo korzysta z CONFIG. */
+/** Lista wszystkich celów. Liczona raz, po załadowaniu konfiguracji systemu. */
 export function getTargets() {
+  if ( cache && (cache.ready === !!game.ready) ) return cache.list;
+  const list = buildTargets();
+  cache = { list, ready: !!game.ready };
+  return list;
+}
+
+function buildTargets() {
   const v6 = isDnd6();
+  const ABILITIES = getAbilities();
   const T = [];
   const push = (group, t) => T.push({ group, ...t });
 
@@ -81,7 +128,7 @@ export function getTargets() {
       minimum: ABILITIES.map(a => `system.abilities.${a}.save.roll.min`)
     } }));
   for ( const a of ABILITIES ) push("Rzuty obronne", roll({
-    id: `save-${a}`, label: `Rzut obronny ${ABILITY_GEN[a]}`, short: `rzutów obronnych ${ABILITY_GEN[a]}`,
+    id: `save-${a}`, label: `Rzut obronny ${abilityAbbr(a)}`, short: `rzutów obronnych ${abilityAbbr(a)}`,
     keys: {
       bonus: [v6 ? `system.abilities.${a}.save.roll.bonus` : `system.abilities.${a}.bonuses.save`],
       advantage: [`system.abilities.${a}.save.roll.mode`],
@@ -109,7 +156,7 @@ export function getTargets() {
       minimum: skillKeys().map(s => `system.skills.${s}.roll.min`)
     } }));
   for ( const [s, cfg] of Object.entries(CONFIG.DND5E?.skills ?? {}) ) push("Umiejętności", roll({
-    id: `skill-${s}`, label: PL.skills[s] ?? label(cfg), short: `testów: ${PL.skills[s] ?? label(cfg)}`,
+    id: `skill-${s}`, label: pl("skills", s, cfg), short: `testów: ${pl("skills", s, cfg)}`,
     keys: {
       bonus: [v6 ? `system.skills.${s}.roll.bonus` : `system.skills.${s}.bonuses.check`],
       advantage: [`system.skills.${s}.roll.mode`],
@@ -130,16 +177,16 @@ export function getTargets() {
     keys: v6 ? {
       bonus: ["system.rolls.attack.bonus"], advantage: ["system.rolls.attack.mode"], minimum: ["system.rolls.attack.min"]
     } : { bonus: Object.keys(attacks).map(k => `system.bonuses.${k}.attack`) } }));
-  for ( const [k, pl] of Object.entries(attacks) ) push("Walka", roll({
-    id: `atk-${k}`, label: `Trafienie ${pl}`, short: `trafienia ${pl}`,
+  for ( const [k, what] of Object.entries(attacks) ) push("Walka", roll({
+    id: `atk-${k}`, label: `Trafienie ${what}`, short: `trafienia ${what}`,
     ops: v6 ? ["bonus", "advantage", "disadvantage", "minimum"] : ["bonus"],
     keys: v6 ? {
       bonus: [`system.rolls.attack.${k}.bonus`], advantage: [`system.rolls.attack.${k}.mode`],
       minimum: [`system.rolls.attack.${k}.min`]
     } : { bonus: [`system.bonuses.${k}.attack`] }
   }));
-  for ( const [k, pl] of Object.entries(attacks) ) push("Walka", {
-    id: `dmg-${k}`, cls: "roll", dice: true, ops: ["bonus"], label: `Obrażenia ${pl}`, short: `obrażeń ${pl}`,
+  for ( const [k, what] of Object.entries(attacks) ) push("Walka", {
+    id: `dmg-${k}`, cls: "roll", dice: true, ops: ["bonus"], label: `Obrażenia ${what}`, short: `obrażeń ${what}`,
     keys: { bonus: [v6 ? `system.rolls.damage.${k}.bonus` : `system.bonuses.${k}.damage`] }
   });
   push("Walka", { id: "spell-dc", cls: "stat", label: "ST czarów", short: "ST czarów", ops: ["add"],
@@ -147,27 +194,27 @@ export function getTargets() {
 
   // Atrybuty
   for ( const a of ABILITIES ) push("Atrybuty", {
-    id: `abl-${a}`, cls: "stat", label: ABILITY_PL[a], short: ABILITY_PL[a],
+    id: `abl-${a}`, cls: "stat", label: abilityName(a), short: abilityName(a),
     ops: ["add", "override", "upgrade", "downgrade"],
     keys: Object.fromEntries(["add", "override", "upgrade", "downgrade"].map(o => [o, [`system.abilities.${a}.value`]]))
   });
 
   // Ruch i zmysły
-  const moves = { walk: "Szybkość", fly: "Szybkość lotu", swim: "Szybkość pływania", climb: "Szybkość wspinaczki",
-    burrow: "Szybkość kopania" };
-  for ( const [k, pl] of Object.entries(moves) ) {
+  const moves = Object.entries(CONFIG.DND5E?.movementTypes ?? {}).filter(([, cfg]) => !cfg?.hidden);
+  for ( const [k, cfg] of moves ) {
+    const name = pl("movement", k, cfg);
     const key = v6 ? `system.attributes.movement.speeds.${k}` : `system.attributes.movement.${k}`;
-    push("Ruch i zmysły", { id: `move-${k}`, cls: "stat", unit: "ft", label: pl, short: pl,
+    push("Ruch i zmysły", { id: `move-${k}`, cls: "stat", unit: "ft", label: name, short: name,
       ops: ["add", "multiply", "override", "upgrade"],
       keys: { add: [key], multiply: [key], override: [key], upgrade: [key] } });
   }
-  const senses = { darkvision: "Widzenie w ciemności", blindsight: "Ślepowidzenie", tremorsense: "Wyczucie drgań",
-    truesight: "Prawdziwe widzenie" };
-  for ( const [k, pl] of Object.entries(senses) ) {
+  for ( const [k, cfg] of Object.entries(CONFIG.DND5E?.senses ?? {}) ) {
+    const name = pl("senses", k, cfg);
     const key = v6 ? `system.attributes.senses.ranges.${k}` : `system.attributes.senses.${k}`;
-    push("Ruch i zmysły", { id: `sense-${k}`, cls: "stat", unit: "ft", label: pl, short: pl,
+    push("Ruch i zmysły", { id: `sense-${k}`, cls: "stat", unit: "ft", label: name, short: name,
       ops: ["upgrade", "add", "override"], keys: { upgrade: [key], add: [key], override: [key] } });
   }
+  for ( const t of CUSTOM_TARGETS ) T.push({ ...t });
   return T;
 }
 
