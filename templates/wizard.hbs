@@ -131,6 +131,23 @@
       {{/if}}
     </div>
     {{/if}}
+    {{#if isArmor}}
+    <div class="nt-card">
+      <div class="nt-legend">{{#if isShield}}Tarcza{{else}}Zbroja{{/if}}</div>
+      <label class="nt-fg"><span>{{#if isShield}}Premia do KP{{else}}KP zbroi{{/if}}</span>
+        <input type="number" min="0" class="nt-num" data-field="item.armor.value" data-dtype="Number" value="{{s.item.armor.value}}">
+      </label>
+      {{#unless isShield}}
+      <label class="nt-fg"><span>Maks. premia ZRC</span>
+        <input type="number" min="0" class="nt-num" data-field="item.armor.dex" value="{{s.item.armor.dex}}" placeholder="∞" aria-label="Maksymalna premia ze Zręczności">
+      </label>
+      <label class="nt-fg"><span>Wymagana Siła</span>
+        <input type="number" min="0" class="nt-num" data-field="item.armor.strength" data-dtype="Number" value="{{s.item.armor.strength}}">
+      </label>
+      {{/unless}}
+      <p class="nt-note {{#if armorMissing}}nt-warn{{/if}}">{{#if armorMissing}}Podaj KP – bez niego system policzy KP od zera, czyli niżej niż bez zbroi. {{/if}}{{armorPreview}}</p>
+    </div>
+    {{/if}}
     {{#if hasMagicalBonus}}
     <div class="nt-card">
       <label class="nt-fg"><span>Premia magiczna</span>
@@ -290,6 +307,7 @@
       </li>
       {{/each}}
     </ol>
+    {{#if isWeaponUsage}}<p class="nt-note">Atak bronią system dodaje sam – tu wybierasz dodatkowe działanie przedmiotu (np. leczenie, rzut obronny).</p>{{/if}}
     {{#if onlyUtility}}<p class="nt-note">Przedmiot nakłada efekt czasowy, więc jego użycie po prostu go włącza. Zaznacz „Można go użyć” w kroku 3, aby dodać leczenie, obrażenia lub rzut obronny.</p>{{/if}}
     <div class="nt-card">
       {{#if u.heal}}

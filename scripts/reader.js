@@ -108,6 +108,7 @@ export function readItem(item, base) {
     magical: sys.properties?.has?.("mgc") ?? false, equipped: !!sys.equipped,
     quantity: sys.quantity ?? 1, description, descriptionOriginal: description,
     magicalBonus: Number(item.type === "equipment" ? sys.armor?.magicalBonus : sys.magicalBonus) || 0,
+    armor: { value: sys.armor?.value ?? 0, dex: sys.armor?.dex ?? "", strength: sys.strength ?? 0 },
     rules: sys.source?.rules || s.item.rules, price: Number(sys.price?.value) || 0,
     priceDenomination: sys.price?.denomination || "gp", mastery: sys.mastery ?? ""
   });
