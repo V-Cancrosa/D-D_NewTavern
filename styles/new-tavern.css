@@ -143,3 +143,10 @@
 
 /* Przycisk w katalogu przedmiotów */
 .new-tavern-directory-button { flex: 1 0 100%; }
+
+/* Kompendia i zasady */
+.nt-wizard .nt-search { width: 100% !important; }
+.nt-wizard .nt-top-pad { padding-top: 10px; }
+.nt-wizard .nt-thumb { width: 32px; height: 32px; flex: 0 0 32px; border: 1px solid #4a4d58; border-radius: 3px; object-fit: cover; }
+.nt-wizard .nt-wide-num { width: 80px !important; flex-basis: 80px; }
+.nt-wizard .nt-warn { color: #e0b070; }

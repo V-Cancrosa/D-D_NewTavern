@@ -20,6 +20,13 @@ Kreator prowadzi krok po kroku, w oknie w stylu systemowego „Create Item”. W
 6. **Ładunki**: liczba, odnawianie (np. 1k6+1 o świcie), znikanie po zużyciu, szybkie ustawienia.
 7. **Gotowe**: podgląd w stylu dymka przedmiotu, wybór postaci albo katalogu przedmiotów.
 
+## Zasady 2014 i 2024
+
+- Kreator czyta wybór zasad świata (ustawienie dnd5e „Rules Version”) i oznacza tworzone przedmioty właściwym źródłem zasad. W kroku „Podstawy” można to zmienić dla pojedynczego przedmiotu; gdy różni się od świata, kreator pokazuje ostrzeżenie i niczego nie przerabia sam.
+- **Przedmioty z kompendiów jako punkt wyjścia**: w pierwszym kroku można wyszukać magiczny przedmiot w kompendiach – SRD 5.1 dla zasad 2014, SRD 5.2 dla 2024 oraz w zainstalowanych podręcznikach (także płatnych, dla ich posiadaczy). Kreator robi kopię, jak przy przeciągnięciu z kompendium; oryginał zostaje bez zmian.
+- Pola zależne od zasad: mistrzostwo broni tylko w 2024; szablony mikstur – akcja (2014) albo akcja dodatkowa (2024).
+- Cena z podpowiedzią: mediana cen przedmiotów o tej samej rzadkości i wersji zasad w Twoich kompendiach.
+
 ## Polskie znaki w nagłówkach
 
 Czcionka nagłówków Foundry i dnd5e (Modesto Condensed) nie ma polskich liter. Moduł uzupełnia ją literami z czcionki Grenze (licencja SIL OFL, plik w `fonts/grenze`). Pozostałe litery zostają oryginalne. Działa w całym świecie i można to wyłączyć w ustawieniach modułu.

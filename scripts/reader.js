@@ -107,7 +107,9 @@ export function readItem(item, base) {
     subtype: sys.type?.value ?? "", rarity: sys.rarity ?? "", attunement: sys.attunement ?? "",
     magical: sys.properties?.has?.("mgc") ?? false, equipped: !!sys.equipped,
     quantity: sys.quantity ?? 1, description, descriptionOriginal: description,
-    magicalBonus: Number(item.type === "equipment" ? sys.armor?.magicalBonus : sys.magicalBonus) || 0
+    magicalBonus: Number(item.type === "equipment" ? sys.armor?.magicalBonus : sys.magicalBonus) || 0,
+    rules: sys.source?.rules || s.item.rules, price: Number(sys.price?.value) || 0,
+    priceDenomination: sys.price?.denomination || "gp", mastery: sys.mastery ?? ""
   });
   const base0 = sys.damage?.base;
   if ( (item.type === "weapon") && base0 ) Object.assign(s.item.damage, {
