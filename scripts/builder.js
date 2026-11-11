@@ -1,4 +1,5 @@
 import { toSystemDice } from "./labels.js";
+import { MODULE_ID, curseEffectData, isCurseEffect } from "./curses.js";
 import { getFormulaRefs, OPERATIONS, getSetOptions, getTarget, allowedKinds } from "./catalog.js";
 
 /** Właściwości przedmiotu (zestaw z kreatora + „magiczny”). */
@@ -199,9 +200,13 @@ export function buildItemData(state, { forActor = false } = {}) {
     quantity: Number(i.quantity) || 1,
     rarity: i.rarity || "",
     attunement: i.attunement || "",
-    identified: true,
+    identified: !i.unidentified,
     properties: itemProperties(i)
   };
+  if ( i.unidentified ) system.unidentified = { name: i.unidName?.trim() || "",
+    description: i.unidDescription ? `<p>${foundry.utils.escapeHTML?.(i.unidDescription) ?? i.unidDescription}</p>` : "" };
+  const curse = curseFlag(i);
+  if ( curse?.status ) effects.push(curseEffectData(curse, i.img));
   if ( i.subtype || i.baseItem ) system.type = { value: i.subtype || "", baseItem: i.baseItem || "" };
   if ( (i.proficient !== null) && (i.proficient !== undefined) && (i.proficient !== "") ) system.proficient = Number(i.proficient);
   if ( Number(i.weight) > 0 ) system.weight = { value: Number(i.weight), units: "lb" };
@@ -250,8 +255,17 @@ export function buildItemData(state, { forActor = false } = {}) {
     type: i.type,
     img: i.img || globalThis.Item?.implementation?.getDefaultArtwork?.({ type: i.type })?.img || "icons/svg/item-bag.svg",
     system,
-    effects
+    effects,
+    ...(curse ? { flags: { [MODULE_ID]: { curse } } } : {})
   };
+}
+
+/** Flaga klątwy z kreatora albo null, gdy przedmiot nie jest przeklęty. */
+export function curseFlag(i) {
+  const c = i.curse;
+  if ( !c?.active ) return null;
+  return { active: true, revealed: !!c.revealed, sticky: !!c.sticky, note: c.note ?? "", status: !!c.status,
+    effectId: c.effectId || foundry.utils.randomID() };
 }
 
 /* -------------------------------------------- */
@@ -312,7 +326,20 @@ export async function saveItem(item, state) {
     update["system.uses.recovery"] = sys.uses.recovery;
     if ( "autoDestroy" in sys.uses ) update["system.uses.autoDestroy"] = sys.uses.autoDestroy;
   } else if ( ed.hadUses ) update["system.uses.max"] = "";
+  if ( "identified" in item.system ) {
+    update["system.identified"] = !i.unidentified;
+    update["system.unidentified.name"] = i.unidName?.trim() || "";
+    if ( i.unidDescription !== i.unidDescriptionOriginal ) update["system.unidentified.description"] = i.unidDescription
+      ? `<p>${foundry.utils.escapeHTML?.(i.unidDescription) ?? i.unidDescription}</p>` : "";
+  }
+  const curse = curseFlag(i);
+  update[`flags.${MODULE_ID}.curse`] = curse ?? { active: false };
   await item.update(update);
+
+  // Efekt „Klątwa” (stan „przeklęty”) – tworzony, gdy potrzebny, usuwany, gdy nie
+  const curseEffect = item.effects.find(isCurseEffect);
+  if ( curse?.status && !curseEffect ) await item.createEmbeddedDocuments("ActiveEffect", [curseEffectData(curse, item.img)], { keepId: true });
+  if ( !curse?.status && curseEffect ) await item.deleteEmbeddedDocuments("ActiveEffect", [curseEffect.id]);
 
   // Efekty
   const keep = new Set(state.effects.map(e => e.id));

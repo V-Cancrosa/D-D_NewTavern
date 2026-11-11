@@ -1,6 +1,7 @@
 import NewTavernWizard from "./wizard.js";
 import { isEditableType, registerTarget } from "./catalog.js";
 import { registerPreset } from "./presets.js";
+import { curseMenuEntries, markCursedRows, registerCurseHooks } from "./curses.js";
 
 const MODULE_ID = "new-tavern";
 /** Krótka nazwa modułu w przyciskach i komunikatach. Pełna: „…and Taverns, Oh My!”. */
@@ -80,6 +81,12 @@ Hooks.once("init", () => {
     scope: "world", config: true, type: Boolean, default: true, requiresReload: true
   });
   if ( game.settings.get(MODULE_ID, "polishGlyphs") ) injectPolishGlyphs();
+  game.settings.register(MODULE_ID, "gmIdentify", {
+    name: "Tylko MG identyfikuje przedmioty",
+    hint: "Gracze nie mogą sami zidentyfikować przedmiotu – próba wysyła prośbę do MG. MG identyfikuje z menu ⋮ przy przedmiocie (opcjonalnie od razu ujawniając klątwę).",
+    scope: "world", config: true, type: Boolean, default: true
+  });
+  registerCurseHooks();
   game.settings.register(MODULE_ID, "replaceEdit", {
     name: `„Edit” otwiera edytor ${BRAND}`,
     hint: "Dla MG: pozycja „Edit” w menu przedmiotu na karcie postaci otwiera edytor modułu. Oryginalna karta przedmiotu jest pod pozycją „Karta systemu”.",
@@ -129,6 +136,8 @@ function addSheetButton(app, html) {
 }
 Hooks.on("renderActorSheet", addSheetButton);
 Hooks.on("renderActorSheetV2", addSheetButton);
+Hooks.on("renderActorSheet", (app, html) => markCursedRows(app, asElement(html)));
+Hooks.on("renderActorSheetV2", (app, html) => markCursedRows(app, asElement(html) ?? app.element));
 
 /** Przycisk obok „Create Item” w katalogu przedmiotów. */
 Hooks.on("renderItemDirectory", (app, html) => {
@@ -186,6 +195,7 @@ function menuEntry(label, icon, run, visible = () => true) {
 
 /** Menu „⋮” przedmiotu na karcie postaci (dnd5e). */
 Hooks.on("dnd5e.getItemContextOptions", (item, menuItems) => {
+  if ( game.user.isGM && featureOn("items") ) menuItems.push(...curseMenuEntries(item, menuEntry));
   if ( !canEdit(item) ) return;
   const label = `Edytuj w ${BRAND}`;
   if ( !game.settings.get(MODULE_ID, "replaceEdit") ) {

@@ -171,6 +171,28 @@
     </div>
     {{/if}}
 
+    <details class="nt-card" data-ui="secret" {{#if secretOpen}}open{{/if}}>
+      <summary class="nt-more">Identyfikacja i klątwa{{#if secretSummary}} <span class="nt-hint">– {{secretSummary}}</span>{{/if}}</summary>
+      <label class="nt-fg nt-top"><span>Niezidentyfikowany</span>
+        <input type="checkbox" class="nt-check" data-field="item.unidentified" {{#if s.item.unidentified}}checked{{/if}}>
+      </label>
+      {{#if s.item.unidentified}}
+      <label class="nt-fg"><span>Nazwa dla graczy</span><input type="text" data-field="item.unidName" value="{{s.item.unidName}}" placeholder="np. Zakurzony pierścień"></label>
+      <div class="nt-pad"><textarea rows="2" data-field="item.unidDescription" placeholder="Co gracze widzą przed identyfikacją" aria-label="Opis przed identyfikacją">{{s.item.unidDescription}}</textarea></div>
+      <p class="nt-note nt-muted">{{#if gmIdentify}}Gracze nie mogą zidentyfikować przedmiotu sami – MG robi to z menu ⋮ przy przedmiocie.{{else}}Gracze mogą zidentyfikować przedmiot sami (ustawienie modułu).{{/if}}</p>
+      {{/if}}
+      <label class="nt-fg nt-top"><span>Przeklęty</span>
+        <input type="checkbox" class="nt-check" data-field="item.curse.active" {{#if s.item.curse.active}}checked{{/if}}>
+      </label>
+      {{#if s.item.curse.active}}
+      <label class="nt-sentence nt-light"><input type="checkbox" class="nt-check" data-field="item.curse.sticky" {{#if s.item.curse.sticky}}checked{{/if}}> Nie da się zdjąć, odłączyć ani wyrzucić, dopóki klątwa trwa</label>
+      <label class="nt-sentence nt-light"><input type="checkbox" class="nt-check" data-field="item.curse.status" {{#if s.item.curse.status}}checked{{/if}}> Nadaje postaci stan „przeklęty”</label>
+      {{#if editing}}<label class="nt-sentence nt-light"><input type="checkbox" class="nt-check" data-field="item.curse.revealed" {{#if s.item.curse.revealed}}checked{{/if}}> Klątwa ujawniona graczom</label>{{/if}}
+      <div class="nt-pad"><textarea rows="3" data-field="item.curse.note" placeholder="Na czym polega klątwa (widzi tylko MG)" aria-label="Opis klątwy">{{s.item.curse.note}}</textarea></div>
+      <p class="nt-note nt-muted">Skutki klątwy (np. −2 do rzutów obronnych) dodaj w kroku „Premie i efekty”. Ujawnienie i zdjęcie klątwy: menu ⋮ przy przedmiocie na karcie postaci.</p>
+      {{/if}}
+    </details>
+
     {{#if hasMore}}
     <details class="nt-card" data-ui="more" {{#if s.ui.more}}open{{/if}}>
       <summary class="nt-more">Więcej opcji</summary>

@@ -70,7 +70,9 @@ function defaultState(actor) {
       equipped: true, quantity: 1, description: "", magicalBonus: 0, damage: { count: 1, die: 8, type: "slashing" },
       rules: worldRules(), price: 0, priceDenomination: "gp", mastery: "",
       armor: { value: 0, dex: "", strength: 0 }, baseItem: "", properties: [], proficient: null, weight: 0,
-      range: { value: null, long: null, reach: 5, units: "ft" }, versatile: { count: 0, die: 0 } },
+      range: { value: null, long: null, reach: 5, units: "ft" }, versatile: { count: 0, die: 0 },
+      unidentified: false, unidName: "", unidDescription: "",
+      curse: { active: false, sticky: true, status: true, revealed: false, note: "", effectId: "" } },
     effects: [],
     usage: { kind: "none", activation: "action", cost: 1, scaling: false,
       heal: { count: 2, die: 4, bonus: "" }, damage: { count: 1, die: 6, bonus: "", type: "fire" },
@@ -303,6 +305,12 @@ export default class NewTavernWizard extends HandlebarsApplicationMixin(Applicat
     ctx.isRanged = ctx.isWeapon && (/R$/.test(s.item.subtype) || s.item.properties.includes("thr")
       || s.item.properties.includes("amm"));
     ctx.hasMore = ctx.isWeapon || ["equipment", "tool", "consumable", "loot"].includes(s.item.type);
+    const secret = [];
+    if ( s.item.unidentified ) secret.push("niezidentyfikowany");
+    if ( s.item.curse?.active ) secret.push(s.item.curse.revealed ? "przeklęty (ujawniony)" : "przeklęty");
+    ctx.secretSummary = secret.join(", ");
+    ctx.secretOpen = s.ui?.secret ?? secret.length > 0;
+    ctx.gmIdentify = (() => { try { return game.settings.get(MODULE_ID, "gmIdentify"); } catch { return true; } })();
     ctx.isArmor = isArmorItem(s.item);
     ctx.isShield = s.item.subtype === "shield";
     if ( ctx.isArmor ) {
@@ -376,6 +384,8 @@ export default class NewTavernWizard extends HandlebarsApplicationMixin(Applicat
 
     // 7. Gotowe / przegląd
     const tags = [pl("rarity", s.item.rarity, ""), s.item.rules === "2014" ? "zasady 2014" : "zasady 2024"];
+    if ( s.item.unidentified ) tags.push(`dla graczy: „${s.item.unidName || "nieznany przedmiot"}”`);
+    if ( s.item.curse?.active ) tags.push(s.item.curse.revealed ? "przeklęty" : "przeklęty – gracz nie wie");
     if ( s.item.attunement === "required" ) tags.push("wymaga dostrojenia");
     if ( s.item.magical || Number(s.item.magicalBonus) ) tags.push("magiczny");
     ctx.tags = tags.filter(Boolean);
@@ -486,6 +496,10 @@ export default class NewTavernWizard extends HandlebarsApplicationMixin(Applicat
     return [
       { step: "basics", icon: "fa-solid fa-ring", label: "Podstawy",
         hint: `${basics} · zasady ${s.item.rules}${s.item.rules !== worldRules() ? " (inne niż świat!)" : ""}`, empty: false },
+      { step: "basics", icon: "fa-solid fa-skull", label: "Identyfikacja i klątwa",
+        hint: [s.item.unidentified ? `niezidentyfikowany („${s.item.unidName || "bez nazwy"}”)` : "zidentyfikowany",
+          s.item.curse?.active ? `przeklęty${s.item.curse.revealed ? ", ujawniony" : ", nieujawniony"}${s.item.curse.sticky ? ", nie da się zdjąć" : ""}` : "bez klątwy"].join(" · "),
+        empty: !s.item.unidentified && !s.item.curse?.active },
       { step: "intents", icon: "fa-solid fa-list-check", label: "Co robi ten przedmiot?",
         hint: INTENTS.filter(i => s.intents[i.id]).map(i => i.label.toLowerCase()).join(", ") || "nic nie wybrano" },
       { step: "effects", icon: "fa-solid fa-shield-halved", label: "Premie i efekty", hint: eff || "brak",
