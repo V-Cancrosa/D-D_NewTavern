@@ -1,6 +1,7 @@
 import { getFormulaRefs, OPERATIONS, getTargets } from "./catalog.js";
 import { isV14 } from "./builder.js";
 import { toPolishDice } from "./labels.js";
+import { MODULE_ID, isCurseEffect } from "./curses.js";
 
 /** Rodzaje aktywności, które kreator potrafi edytować. */
 export const MANAGED_ACTIVITY_TYPES = ["utility", "heal", "damage", "save"];
@@ -131,7 +132,16 @@ export function readItem(item, base) {
   }
 
   // Efekty (tylko zwykłe, bez zaklęć „enchantment”)
-  const effects = item.effects.filter(e => !["enchantment"].includes(e.type));
+  const effects = item.effects.filter(e => !["enchantment"].includes(e.type) && !isCurseEffect(e));
+
+  // Identyfikacja i klątwa
+  const unidDescription = htmlToText(sys.unidentified?.description);
+  Object.assign(s.item, { unidentified: sys.identified === false, unidName: sys.unidentified?.name ?? "",
+    unidDescription, unidDescriptionOriginal: unidDescription });
+  const curse = item.flags?.[MODULE_ID]?.curse;
+  const curseEffect = item.effects.find(isCurseEffect);
+  if ( curse?.active ) s.item.curse = { active: true, revealed: !!curse.revealed, sticky: !!curse.sticky,
+    note: curse.note ?? "", status: !!curseEffect, effectId: curseEffect?.id ?? curse.effectId ?? "" };
   s.effects = effects.map(e => {
     const src = e.toObject();
     const changes = (isV14() ? src.system?.changes : src.changes) ?? [];

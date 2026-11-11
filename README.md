@@ -26,6 +26,13 @@ Kreator prowadzi krok po kroku, w oknie w stylu systemowego „Create Item”. W
 - **Więcej opcji** w kroku „Podstawy”: właściwości (po polsku), biegłość, zasięg (wręcz albo normalny/daleki), waga. Broń wszechstronna ma pole obrażeń oburęcznych.
 - **Wpływ na postać**: gdy przedmiot jest dla konkretnej postaci (albo edytujesz przedmiot z jej karty), kreator pokazuje zmiany przed → po (KP, rzuty obronne, umiejętności, szybkość, inicjatywa…), trafienie i obrażenia broni oraz ostrzeżenia (brak biegłości, wymagana Siła). Liczy to dnd5e na tymczasowej kopii postaci w pamięci – nic nie jest zapisywane.
 
+## Przeklęte przedmioty i identyfikacja
+
+- W kroku „Podstawy” → **Identyfikacja i klątwa**: przedmiot niezidentyfikowany (nazwa i opis widoczne dla graczy przed identyfikacją) oraz przeklęty (opis klątwy widoczny tylko dla MG).
+- Klątwa może **blokować zdjęcie, odłączenie dostrojenia i wyrzucenie** przedmiotu przez gracza (gracz widzi tylko „coś nie pozwala ci…”, MG dostaje szept) oraz nadawać postaci stan „przeklęty” z dnd5e. Skutki klątwy (np. kary) dodajesz jak zwykłe efekty.
+- Ustawienie **„Tylko MG identyfikuje przedmioty”** (domyślnie włączone): próba identyfikacji przez gracza wysyła prośbę do MG.
+- Menu ⋮ przy przedmiocie (dla MG): **Zidentyfikuj (MG)**, **Zidentyfikuj i ujawnij klątwę**, **Ujawnij klątwę**, **Zdejmij klątwę**. Przeklęte przedmioty mają na karcie postaci ikonę czaszki widoczną tylko dla MG.
+
 ## Zasady 2014 i 2024
 
 - Kreator czyta wybór zasad świata (ustawienie dnd5e „Rules Version”) i oznacza tworzone przedmioty właściwym źródłem zasad. W kroku „Podstawy” można to zmienić dla pojedynczego przedmiotu; gdy różni się od świata, kreator pokazuje ostrzeżenie i niczego nie przerabia sam.

@@ -2,8 +2,7 @@
  * „Wpływ na postać”: dnd5e liczy postać z nowym przedmiotem na tymczasowej kopii w pamięci.
  * Nic nie jest zapisywane w świecie – kopia znika po obliczeniu.
  */
-import { pl } from "./labels.js";
-import { toPolishDice } from "./labels.js";
+import { pl, toPolishDice } from "./labels.js";
 
 const get = (obj, path) => foundry.utils.getProperty(obj, path);
 const signed = n => (Number.isFinite(n) ? `${n >= 0 ? "+" : ""}${n}` : "—");

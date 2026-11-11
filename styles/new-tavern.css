@@ -159,3 +159,6 @@
 .nt-wizard .nt-dn { color: #e48a8a; font-weight: bold; }
 .nt-wizard .nt-same { color: #d8d4ca; }
 .nt-wizard .nt-small { font-size: 11px; }
+
+/* Przeklęte przedmioty na karcie postaci (widzi tylko MG) */
+.nt-curse-mark { margin-left: 6px; color: #b84a4a; font-size: 0.85em; }
